@@ -1,3 +1,14 @@
+#
+# AI-Teacher
+#
+# Created by Zigao Wang on August 1, 2024 This project is designed to create an AI-driven interactive teacher for
+# middle school students, focusing on English exam preparation. The AI will generate questions, evaluate answers,
+# and provide feedback.
+#
+# 由王子高于2024年8月1日创建
+# 该项目旨在为中学生创建一个AI驱动的互动教师，专注于英语考试准备。AI将生成问题，评估答案，并提供反馈。
+#
+
 import openai
 import os
 import json
