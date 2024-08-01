@@ -1,221 +1,128 @@
-from flask import Flask, request, render_template, jsonify
 import openai
 import os
-import json
 from dotenv import load_dotenv
-from docx import Document
-from time import sleep
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask_session import Session
+import markdown
+from bs4 import BeautifulSoup
+import uuid
 
-# 加载环境变量 Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
-# 初始化 OpenAI 客户端 Initialize the OpenAI client
-from openai import OpenAI
-
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
-# 缓存文件路径 Cache file path
-CACHE_FILE = 'cache.json'
+# Get the OpenAI API key from environment variables
+api_key = os.getenv('OPENAI_API_KEY')
+client = openai.OpenAI(api_key=api_key)
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
 
+def convert_md_to_html(md_text):
+    html = markdown.markdown(md_text, extensions=['fenced_code', 'tables', 'toc', 'footnotes', 'attr_list', 'md_in_html'])
+    soup = BeautifulSoup(html, 'lxml')
 
-def read_docx(file_path):
-    """读取 docx 文件内容 Read content from a docx file"""
-    doc = Document(file_path)
-    full_text = []
-    for para in doc.paragraphs:
-        full_text.append(para.text)
-    return '\n'.join(full_text)
+    for code in soup.find_all('code'):
+        parent = code.parent
+        if parent.name == 'pre':
+            language = code.get('class', [''])[0].replace('language-', '') or 'text'
+            code['class'] = f'language-{language}'
+            copy_button_html = f'''
+            <div class="code-header">
+                <span class="language-label">{language}</span>
+                <button class="copy-button" onclick="copyToClipboard(this)">
+                    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-copy js-clipboard-copy-icon">
+                        <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path>
+                        <path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
+                    </svg>
+                </button>
+            </div>
+            '''
+            parent.insert_before(BeautifulSoup(copy_button_html, 'lxml'))
 
-
-def send_chunk_to_ai(content, session_id, retries=3):
-    """发送文本块到 AI 并确认接收 Send text chunk to AI and confirm receipt"""
-    for attempt in range(retries):
-        try:
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system",
-                     "content": "你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。"},
-                    {"role": "user",
-                     "content": f"这是中考真题的一部分:\n{content}\n\n请确认你已经接收到这部分内容并回复'Input Success!'。只需要回复'Input Success'，不要回复别的。"}
-                ],
-                max_tokens=50,
-                temperature=0.7,
-                timeout=60
-            )
-            return response.choices[0].message.content.strip()
-        except openai.OpenAIError as e:
-            print(f"Error on attempt {attempt + 1}: {e}")
-            if attempt < retries - 1:
-                sleep(2 ** attempt)  # 指数退避 Exponential backoff
-            else:
-                raise
-
-
-def generate_question(session_id, retries=3):
-    """生成一道中考形式的英语题目 Generate a single exam-style English question"""
-    for attempt in range(retries):
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "你是一位中学的英语老师，你要根据提供的中考真题来教学生"},
-                    {"role": "user",
-                     "content": "请根据这些内容生成一道中考形式的英语题目，要有不同形式的，请学习中考真题里的风格，谢谢！只要一道就行了，一道，那这道题目来来考考你的学生。要当老师！"}
-                ],
-                max_tokens=2000,
-                temperature=0.7,
-                timeout=60
-            )
-            return response.choices[0].message.content.strip()
-        except openai.OpenAIError as e:
-            print(f"Error on attempt {attempt + 1}: {e}")
-            if attempt < retries - 1:
-                sleep(2 ** attempt)  # 指数退避 Exponential backoff
-            else:
-                raise
-
-
-def evaluate_answer(question, answer, session_id, retries=3):
-    """评估学生的回答并提供反馈 Evaluate student's answer and provide feedback"""
-    for attempt in range(retries):
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system",
-                     "content": "你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。"},
-                    {"role": "user",
-                     "content": f"题目：{question}\n学生的答案：{answer}\n请给出评分和反馈。要记住，你是一位中学老师哦！"}
-                ],
-                max_tokens=2000,
-                temperature=0.7,
-                timeout=60
-            )
-            return response.choices[0].message.content.strip()
-        except openai.OpenAIError as e:
-            print(f"Error on attempt {attempt + 1}: {e}")
-            if attempt < retries - 1:
-                sleep(2 ** attempt)  # 指数退避 Exponential backoff
-            else:
-                raise
-
-
-def process_all_docx_files(directory):
-    """处理所有的 docx 文件 Process all docx files"""
-    combined_content = []
-    for filename in os.listdir(directory):
-        if filename.endswith('.docx'):
-            file_path = os.path.join(directory, filename)
-            print(f"Processing file: {file_path}")
-            content = read_docx(file_path)
-            combined_content.append(content)
-    return combined_content
-
-
-def chunk_text(text, chunk_size=1500):
-    """将文本分块 Chunk the text"""
-    words = text.split()
-    for i in range(0, len(words), chunk_size):
-        yield ' '.join(words[i:i + chunk_size])
-
-
-def load_cache():
-    """加载缓存 Load cache"""
-    if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, 'r') as f:
-            return json.load(f)
-    return {}
-
-
-def save_cache(cache):
-    """保存缓存 Save cache"""
-    with open(CACHE_FILE, 'w') as f:
-        json.dump(cache, f)
-
-
-def initialize_student_profile(student_name):
-    """初始化学生档案 Initialize student profile"""
-    profile = {
-        "name": student_name,
-        "preferences": {},
-        "progress": {}
-    }
-    return profile
-
-
-def update_student_profile(profile, key, value):
-    """更新学生档案 Update student profile"""
-    profile[key] = value
-    return profile
-
+    return soup.prettify()
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+def home():
+    if 'conversations' not in session:
+        session['conversations'] = {}
+    return render_template('index.html', chat_id=None, messages=[], conversations=session['conversations'])
 
+@app.route('/chat/<chat_id>')
+def chat(chat_id):
+    if 'conversations' not in session or chat_id not in session['conversations']:
+        return redirect(url_for('home'))
+    return render_template('index.html', chat_id=chat_id, messages=session['conversations'][chat_id]['messages'], conversations=session['conversations'])
 
-@app.route('/start_session', methods=['POST'])
-def start_session():
-    student_name = request.form['student_name']
+@app.route('/new_chat', methods=['POST', 'GET'])
+def new_chat():
+    chat_id = str(uuid.uuid4())
+    session['conversations'][chat_id] = {'messages': [], 'title': ''}
+    if request.method == 'POST':
+        return jsonify({'chat_id': chat_id})
+    else:
+        return redirect(url_for('chat', chat_id=chat_id))
 
-    # 加载缓存 Load cache
-    cache = load_cache()
-    session_id = cache.get('session_id', None)
-    processed_chunks = cache.get('processed_chunks', [])
-    student_profile = cache.get('student_profile', initialize_student_profile(student_name))
+@app.route('/delete_chat/<chat_id>', methods=['POST'])
+def delete_chat(chat_id):
+    if 'conversations' in session and chat_id in session['conversations']:
+        del session['conversations'][chat_id]
+    return jsonify({'success': True})
 
-    combined_content_list = process_all_docx_files('data')
-    combined_content = '\n'.join(combined_content_list)
+@app.route('/ask/<chat_id>', methods=['POST'])
+def ask(chat_id):
+    if 'conversations' not in session or chat_id not in session['conversations']:
+        return jsonify({'error': 'Chat not found'}), 404
 
-    # 发送文本块到 AI 并确认接收 Send chunks to AI and confirm receipt
-    for chunk in chunk_text(combined_content):
-        if chunk not in processed_chunks:
-            confirmation = send_chunk_to_ai(chunk, session_id)
-            print(f"AI Response: {confirmation}")
-            if confirmation == 'Input Success!':
-                processed_chunks.append(chunk)
+    user_input = request.json.get('question')
+    if not user_input:
+        return jsonify({'error': 'No question provided'}), 400
 
-    # 保存缓存 Save cache
-    cache['session_id'] = session_id
-    cache['processed_chunks'] = processed_chunks
-    cache['student_profile'] = student_profile
-    save_cache(cache)
+    messages = session['conversations'][chat_id]['messages']
+    messages.append({"role": "user", "content": user_input})
 
-    return jsonify({"message": "Session started successfully."})
+    openai_messages = [
+        {"role": "system", "content": "你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。"},
+        *messages
+    ]
 
+    response = get_response_from_openai(openai_messages)
+    messages.append({"role": "assistant", "content": response})
 
-@app.route('/get_question', methods=['GET'])
-def get_question():
-    cache = load_cache()
-    session_id = cache.get('session_id', None)
-    question = generate_question(session_id)
-    return jsonify({"question": question})
+    session['conversations'][chat_id]['title'] = generate_title(messages)
 
+    session['conversations'][chat_id]['messages'] = messages
+    # Move the most recent conversation to the top
+    session['conversations'] = {chat_id: session['conversations'][chat_id], **{k: v for k, v in session['conversations'].items() if k != chat_id}}
+    return jsonify({'response': response})
 
-@app.route('/submit_answer', methods=['POST'])
-def submit_answer():
-    cache = load_cache()
-    session_id = cache.get('session_id', None)
-    question = request.form['question']
-    answer = request.form['answer']
-    feedback = evaluate_answer(question, answer, session_id)
+def get_response_from_openai(messages):
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=1500,
+            temperature=0.5,
+        )
+        return convert_md_to_html(response.choices[0].message.content.strip())
+    except Exception as e:
+        return f"Error: {str(e)}"
 
-    student_profile = cache.get('student_profile', {})
-    progress_key = f"question_{len(student_profile['progress']) + 1}"
-    student_profile['progress'][progress_key] = {
-        "question": question,
-        "answer": answer,
-        "feedback": feedback
-    }
-
-    cache['student_profile'] = student_profile
-    save_cache(cache)
-
-    return jsonify({"feedback": feedback})
-
+def generate_title(messages):
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages + [{"role": "user", "content": "Provide a short and descriptive title for this "
+                                                             "conversation. Make it short, so 8 words max. And don't "
+                                                             "include anything else. Do not include Title: at the "
+                                                             "beginning."}],
+            max_tokens=10,
+            temperature=0.5,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return "Untitled Conversation"
 
 if __name__ == '__main__':
     app.run(debug=True)
