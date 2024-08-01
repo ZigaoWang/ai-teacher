@@ -17,6 +17,7 @@
         <h2>问题:</h2>
         <p id="question"></p>
         <form id="answer-form">
+            <input type="hidden" id="question_hidden" name="question">
             <label for="answer">你的答案:</label>
             <input type="text" id="answer" name="answer" required>
             <button type="submit">提交答案</button>
@@ -38,6 +39,8 @@
 
             $('#answer-form').submit(function(event) {
                 event.preventDefault();
+                const questionText = $('#question').text();
+                $('#question_hidden').val(questionText);
                 $.post('/submit_answer', $(this).serialize(), function(data) {
                     $('#feedback').text(data.feedback);
                     getQuestion();
