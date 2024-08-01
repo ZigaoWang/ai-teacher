@@ -1,14 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload DOCX</title>
+    <title>AI教师</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <form action="/upload_docx" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".docx">
-        <button type="submit">Upload</button>
+    <h1>欢迎使用AI教师</h1>
+    <form id="start-session-form">
+        <label for="student_name">请输入学生的名字:</label>
+        <input type="text" id="student_name" name="student_name" required>
+        <button type="submit">开始会话</button>
     </form>
+
+    <div id="question-section" style="display: none;">
+        <h2>问题:</h2>
+        <p id="question"></p>
+        <form id="answer-form">
+            <label for="answer">你的答案:</label>
+            <input type="text" id="answer" name="answer" required>
+            <button type="submit">提交答案</button>
+        </form>
+        <h2>反馈:</h2>
+        <p id="feedback"></p>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#start-session-form').submit(function(event) {
+                event.preventDefault();
+                $.post('/start_session', $(this).serialize(), function(data) {
+                    alert(data.message);
+                    $('#question-section').show();
+                    getQuestion();
+                });
+            });
+
+            $('#answer-form').submit(function(event) {
+                event.preventDefault();
+                $.post('/submit_answer', $(this).serialize(), function(data) {
+                    $('#feedback').text(data.feedback);
+                    getQuestion();
+                });
+            });
+        });
+
+        function getQuestion() {
+            $.get('/get_question', function(data) {
+                $('#question').text(data.question);
+                $('#answer').val('');
+                $('#feedback').text('');
+            });
+        }
+    </script>
 </body>
 </html>
