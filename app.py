@@ -60,6 +60,7 @@ def home():
 
 @app.route('/new_session', methods=['POST'])
 def new_session():
+    session.clear()  # 清空会话和缓存
     session['conversation'] = []
     return jsonify({'message': 'New session started.'})
 
@@ -75,14 +76,7 @@ def ask():
     messages = session['conversation']
     messages.append({"role": "user", "content": user_input})
 
-    combined_content = session.get('combined_content', '')
-
-    openai_messages = [
-        {"role": "system", "content": f"你是一位非常主动且互动的AI老师，负责教学生各种知识。你会主动提出问题，给出解释，并提供反馈。以下是一些中考英语真题内容：\n{combined_content}"},
-        *messages
-    ]
-
-    response = get_response_from_openai(openai_messages)
+    response = get_response_from_openai(messages)
     messages.append({"role": "assistant", "content": response})
 
     session['conversation'] = messages
@@ -90,10 +84,26 @@ def ask():
 
 @app.route('/load_data', methods=['POST'])
 def load_data():
-    directory = 'data'  # .docx 文件所在目录 Directory containing the .docx files
-    combined_content_list = process_all_docx_files(directory)
-    combined_content = '\n'.join(combined_content_list)
-    session['combined_content'] = combined_content
+    if 'data_loaded' not in session:
+        directory = 'data'  # .docx 文件所在目录 Directory containing the .docx files
+        combined_content_list = process_all_docx_files(directory)
+        combined_content = '\n'.join(combined_content_list)
+        session['combined_content'] = combined_content
+
+        # 分块处理 combined_content
+        chunk_size = 10000  # 每块的最大字符数
+        chunks = [combined_content[i:i + chunk_size] for i in range(0, len(combined_content), chunk_size)]
+
+        for index, chunk in enumerate(chunks):
+            openai_messages = [
+                {"role": "system", "content": f"以下是一些中考英语真题内容的一部分：\n{chunk}"},
+                {"role": "user", "content": f"请阅读以上内容，并回复'训练数据 #{index + 1} 输入完毕'。不要回复别的。"}
+            ]
+            response = get_response_from_openai(openai_messages)
+            print(response)  # Print AI's response to verify it outputs '训练数据输入完毕'
+
+        session['data_loaded'] = True
+
     return jsonify({'message': 'Data loaded successfully'})
 
 def process_all_docx_files(directory):
@@ -110,12 +120,12 @@ def process_all_docx_files(directory):
 def get_response_from_openai(messages):
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=messages,
-            max_tokens=1500,
+            max_tokens=4096,
             temperature=0.5,
         )
-        return convert_md_to_html(response.choices[0].message.content.strip())
+        return response.choices[0].message.content.strip()
     except Exception as e:
         return f"Error: {str(e)}"
 

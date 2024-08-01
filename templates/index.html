@@ -312,11 +312,14 @@
     <div class="loading-screen" id="loading-screen">
         加载中，请稍候...
     </div>
-    <div class="chat-container">
+    <div class="chat-container" id="chat-container" style="display: none;">
         <div class="chat-header">
             <span>AI老师</span>
-            <div class="toggle-switch" onclick="toggleMode()" role="button" aria-label="Toggle light/dark mode">
-                <i class="fas fa-sun icon" id="mode-icon"></i>
+            <div class="header-buttons">
+                <div class="toggle-switch" onclick="toggleMode()" role="button" aria-label="Toggle light/dark mode">
+                    <i class="fas fa-sun icon" id="mode-icon"></i>
+                </div>
+                <button onclick="clearSession()" aria-label="Clear session">清空记忆</button>
             </div>
         </div>
         <div class="chat-messages" id="chat-messages">
@@ -352,8 +355,7 @@
             button.innerHTML = `
                 <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check">
                     <path fill-rule="evenodd" d="M13.78 3.22a.75.75 0 0 1 1.06 1.06l-8 8a.75.75 0 0 1-1.06 0l-4-4a.75.75 0 1 1 1.06-1.06L6 10.44l7.78-7.78z"></path>
-                </svg>
-            `;
+                </svg>`;
 
             // Revert back to the original copy icon after 2 seconds
             setTimeout(() => {
@@ -403,6 +405,22 @@
             }
         }
 
+        async function clearSession() {
+            const response = await fetch('/new_session', {
+                method: 'POST'
+            });
+
+            const data = await response.json();
+            if (data.message) {
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.innerHTML = "";
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.classList.add('chat-message', 'bot');
+                userMessageDiv.innerHTML = `<div class="message-content">${data.message}</div>`;
+                chatMessages.appendChild(userMessageDiv);
+            }
+        }
+
         window.onload = async function() {
             // Set the initial mode
             const mode = localStorage.getItem('mode') || 'light';
@@ -418,12 +436,22 @@
             document.getElementById('loading-screen').style.display = 'flex';
 
             // Simulate loading process
-            await fetch('/load_data', {
+            const response = await fetch('/load_data', {
                 method: 'POST'
             });
 
+            const data = await response.json();
+            if (data.message) {
+                const chatMessages = document.getElementById('chat-messages');
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.classList.add('chat-message', 'bot');
+                userMessageDiv.innerHTML = `<div class="message-content">${data.message}</div>`;
+                chatMessages.appendChild(userMessageDiv);
+            }
+
             // Hide loading screen
             document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('chat-container').style.display = 'flex';
         };
 
         function toggleMode() {
