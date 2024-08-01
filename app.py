@@ -1,11 +1,12 @@
 import openai
 import os
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask import Flask, request, jsonify, render_template, session
 from flask_session import Session
 import markdown
 from bs4 import BeautifulSoup
-import uuid
+from docx import Document
+import time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -43,64 +44,73 @@ def convert_md_to_html(md_text):
 
     return soup.prettify()
 
+def read_docx(file_path):
+    """读取 docx 文件内容 Read content from a docx file"""
+    doc = Document(file_path)
+    full_text = []
+    for para in doc.paragraphs:
+        full_text.append(para.text)
+    return '\n'.join(full_text)
+
 @app.route('/')
 def home():
-    if 'conversations' not in session:
-        session['conversations'] = {}
-    return render_template('index.html', chat_id=None, messages=[], conversations=session['conversations'])
+    if 'conversation' not in session:
+        session['conversation'] = []
+    return render_template('index.html', messages=session['conversation'])
 
-@app.route('/chat/<chat_id>')
-def chat(chat_id):
-    if 'conversations' not in session or chat_id not in session['conversations']:
-        return redirect(url_for('home'))
-    return render_template('index.html', chat_id=chat_id, messages=session['conversations'][chat_id]['messages'], conversations=session['conversations'])
+@app.route('/new_session', methods=['POST'])
+def new_session():
+    session['conversation'] = []
+    return jsonify({'message': 'New session started.'})
 
-@app.route('/new_chat', methods=['POST', 'GET'])
-def new_chat():
-    chat_id = str(uuid.uuid4())
-    session['conversations'][chat_id] = {'messages': [], 'title': ''}
-    if request.method == 'POST':
-        return jsonify({'chat_id': chat_id})
-    else:
-        return redirect(url_for('chat', chat_id=chat_id))
-
-@app.route('/delete_chat/<chat_id>', methods=['POST'])
-def delete_chat(chat_id):
-    if 'conversations' in session and chat_id in session['conversations']:
-        del session['conversations'][chat_id]
-    return jsonify({'success': True})
-
-@app.route('/ask/<chat_id>', methods=['POST'])
-def ask(chat_id):
-    if 'conversations' not in session or chat_id not in session['conversations']:
-        return jsonify({'error': 'Chat not found'}), 404
+@app.route('/ask', methods=['POST'])
+def ask():
+    if 'conversation' not in session:
+        session['conversation'] = []
 
     user_input = request.json.get('question')
     if not user_input:
         return jsonify({'error': 'No question provided'}), 400
 
-    messages = session['conversations'][chat_id]['messages']
+    messages = session['conversation']
     messages.append({"role": "user", "content": user_input})
 
+    combined_content = session.get('combined_content', '')
+
     openai_messages = [
-        {"role": "system", "content": "你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。"},
+        {"role": "system", "content": f"你是一位非常主动且互动的AI老师，负责教学生各种知识。你会主动提出问题，给出解释，并提供反馈。以下是一些中考英语真题内容：\n{combined_content}"},
         *messages
     ]
 
     response = get_response_from_openai(openai_messages)
     messages.append({"role": "assistant", "content": response})
 
-    session['conversations'][chat_id]['title'] = generate_title(messages)
-
-    session['conversations'][chat_id]['messages'] = messages
-    # Move the most recent conversation to the top
-    session['conversations'] = {chat_id: session['conversations'][chat_id], **{k: v for k, v in session['conversations'].items() if k != chat_id}}
+    session['conversation'] = messages
     return jsonify({'response': response})
+
+@app.route('/load_data', methods=['POST'])
+def load_data():
+    directory = 'data'  # .docx 文件所在目录 Directory containing the .docx files
+    combined_content_list = process_all_docx_files(directory)
+    combined_content = '\n'.join(combined_content_list)
+    session['combined_content'] = combined_content
+    return jsonify({'message': 'Data loaded successfully'})
+
+def process_all_docx_files(directory):
+    """处理所有的 docx 文件 Process all docx files"""
+    combined_content = []
+    for filename in os.listdir(directory):
+        if filename.endswith('.docx'):
+            file_path = os.path.join(directory, filename)
+            print(f"Processing file: {file_path}")
+            content = read_docx(file_path)
+            combined_content.append(content)
+    return combined_content
 
 def get_response_from_openai(messages):
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=messages,
             max_tokens=1500,
             temperature=0.5,
@@ -108,21 +118,6 @@ def get_response_from_openai(messages):
         return convert_md_to_html(response.choices[0].message.content.strip())
     except Exception as e:
         return f"Error: {str(e)}"
-
-def generate_title(messages):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages + [{"role": "user", "content": "Provide a short and descriptive title for this "
-                                                             "conversation. Make it short, so 8 words max. And don't "
-                                                             "include anything else. Do not include Title: at the "
-                                                             "beginning."}],
-            max_tokens=10,
-            temperature=0.5,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        return "Untitled Conversation"
 
 if __name__ == '__main__':
     app.run(debug=True)
