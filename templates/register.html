@@ -9,6 +9,9 @@
 <body>
     <div class="auth-container">
         <h2>注册</h2>
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
         <form method="POST" action="/register">
             <label for="username">用户名:</label>
             <input type="text" id="username" name="username" required><br>

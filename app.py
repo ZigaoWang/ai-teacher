@@ -4,9 +4,14 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
 import markdown
 from bs4 import BeautifulSoup
+import sys
+
+# Add the current directory to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from models import db, User
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,40 +25,17 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.db'
 app.config['SESSION_TYPE'] = 'filesystem'
-db = SQLAlchemy(app)
+db.init_app(app)
 Session(app)
-
-
-# Database Model
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    password_hash = db.Column(db.String(150), nullable=False)
-    name = db.Column(db.String(150), nullable=False)
-    age = db.Column(db.Integer)
-    favorite_subject = db.Column(db.String(150))
-    learning_goals = db.Column(db.Text)
-    hobbies = db.Column(db.String(250))
-    preferred_learning_style = db.Column(db.String(150))
-    challenges = db.Column(db.Text)
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
 
 with app.app_context():
     db.create_all()
-
 
 def convert_md_to_html(md_text):
     html = markdown.markdown(md_text,
                              extensions=['fenced_code', 'tables', 'toc', 'footnotes', 'attr_list', 'md_in_html'])
     soup = BeautifulSoup(html, 'lxml')
     return soup.prettify()
-
 
 def get_response_from_openai(messages):
     try:
@@ -69,7 +51,6 @@ def get_response_from_openai(messages):
     except Exception as e:
         return f"Error: {str(e)}"
 
-
 def initial_setup_prompt(user):
     initial_prompt = [
         {"role": "system",
@@ -79,20 +60,24 @@ def initial_setup_prompt(user):
     response = get_response_from_openai(initial_prompt)
     session['conversation'].append({"role": "assistant", "content": response})
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         name = request.form['name']
+
+        # Check if the username already exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            return render_template('register.html', error='用户名已注册，请选择其他用户名')
+
         user = User(username=username, name=name)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
         return redirect(url_for('login'))
     return render_template('register.html')
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -107,12 +92,10 @@ def login():
             return 'Invalid credentials'
     return render_template('login.html')
 
-
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
-
 
 @app.route('/onboarding', methods=['GET', 'POST'])
 def onboarding():
@@ -131,7 +114,6 @@ def onboarding():
         return redirect(url_for('home'))
     return render_template('onboarding.html', user=user)
 
-
 @app.route('/')
 def home():
     if 'user_id' not in session:
@@ -142,7 +124,6 @@ def home():
         session['conversation'] = []
         initial_setup_prompt(user)
     return render_template('index.html', messages=session['conversation'], user=user)
-
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -166,7 +147,6 @@ def ask():
 
     session['conversation'] = messages
     return jsonify({'response': response})
-
 
 if __name__ == '__main__':
     app.run(debug=True)
