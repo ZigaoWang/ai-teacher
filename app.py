@@ -1,7 +1,7 @@
 import openai
 import os
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, render_template, session
+from flask import Flask, request, jsonify, render_template, session, Response
 from flask_session import Session
 import markdown
 from bs4 import BeautifulSoup
@@ -20,6 +20,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
+
+data_loaded = False  # Use a global variable to track data loading state
 
 def convert_md_to_html(md_text):
     html = markdown.markdown(md_text, extensions=['fenced_code', 'tables', 'toc', 'footnotes', 'attr_list', 'md_in_html'])
@@ -72,10 +74,10 @@ def home():
 
 @app.route('/new_session', methods=['POST'])
 def new_session():
+    global data_loaded
     session.clear()  # 清空会话和缓存
     session['conversation'] = []
-    load_data()  # 重新加载数据
-    initial_setup_prompt()  # 重新设置初始提示
+    data_loaded = False  # Reset the data loading state
     return jsonify({'message': 'New session started and data reloaded.'})
 
 @app.route('/ask', methods=['POST'])
@@ -96,9 +98,10 @@ def ask():
     session['conversation'] = messages
     return jsonify({'response': response})
 
-@app.route('/load_data', methods=['POST'])
+@app.route('/load_data', methods=['GET'])
 def load_data():
-    if 'data_loaded' not in session:
+    global data_loaded
+    if not data_loaded:
         directory = 'data'  # .docx 和 .pdf 文件所在目录 Directory containing the .docx and .pdf files
         combined_content_list = process_all_files(directory)
         combined_content = '\n'.join(combined_content_list)
@@ -108,17 +111,23 @@ def load_data():
         chunk_size = 10000  # 每块的最大字符数
         chunks = [combined_content[i:i + chunk_size] for i in range(0, len(combined_content), chunk_size)]
 
-        for index, chunk in enumerate(chunks):
-            openai_messages = [
-                {"role": "system", "content": f"以下是一些中考英语真题内容的一部分：\n{chunk}"},
-                {"role": "user", "content": f"请阅读以上内容，并回复'训练数据 #{index + 1} 输入完毕'。不要回复别的。"}
-            ]
-            response = get_response_from_openai(openai_messages)
-            print(response)  # Print AI's response to verify it outputs '训练数据 #[x] 输入完毕'
+        def generate():
+            for index, chunk in enumerate(chunks):
+                openai_messages = [
+                    {"role": "system", "content": f"以下是一些中考英语真题内容的一部分：\n{chunk}"},
+                    {"role": "user", "content": f"请阅读以上内容，并回复'训练数据 #{index + 1} 输入完毕'。不要回复别的。"}
+                ]
+                response = get_response_from_openai(openai_messages)
+                yield f"data: 训练数据 #{index + 1} 输入完毕\n\n"
+                print(response)  # Print AI's response to verify it outputs '训练数据 #[x] 输入完毕'
+                time.sleep(1)
 
-        session['data_loaded'] = True
+            data_loaded = True  # Update the global data loading state
+            yield "data: 数据加载完成\n\n"
 
-    return jsonify({'message': 'Data loaded successfully'})
+        return Response(generate(), mimetype='text/event-stream')
+
+    return jsonify({'message': 'Data already loaded'})
 
 def process_all_files(directory):
     """处理所有的 docx 和 pdf 文件 Process all docx and pdf files"""
@@ -143,7 +152,9 @@ def get_response_from_openai(messages):
             max_tokens=4096,
             temperature=0.5,
         )
-        return response.choices[0].message.content.strip()
+        markdown_content = response.choices[0].message.content.strip()
+        html_content = convert_md_to_html(markdown_content)
+        return html_content
     except Exception as e:
         return f"Error: {str(e)}"
 
