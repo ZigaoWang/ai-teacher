@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个性化设置</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="auth-container">
+        <h2>个性化设置</h2>
+        <form method="POST" action="/onboarding">
+            <label for="age">年龄:</label>
+            <input type="number" id="age" name="age" required><br>
+            <label for="favorite_subject">最喜欢的科目:</label>
+            <input type="text" id="favorite_subject" name="favorite_subject" required><br>
+            <label for="learning_goals">学习目标:</label>
+            <textarea id="learning_goals" name="learning_goals" required></textarea><br>
+            <button type="submit">完成</button>
+        </form>
+    </div>
+</body>
+</html>

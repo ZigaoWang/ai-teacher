@@ -1,12 +1,12 @@
 import openai
 import os
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, render_template, session
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from flask_session import Session
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 import markdown
 from bs4 import BeautifulSoup
-from docx import Document
-import PyPDF2
 
 # Load environment variables from .env file
 load_dotenv()
@@ -17,73 +17,38 @@ client = openai.OpenAI(api_key=api_key)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.db'
 app.config['SESSION_TYPE'] = 'filesystem'
+db = SQLAlchemy(app)
 Session(app)
 
-data_loaded = False  # Use a global variable to track data loading state
-combined_content = ""  # Store combined content globally
+
+# Database Model
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password_hash = db.Column(db.String(150), nullable=False)
+    name = db.Column(db.String(150), nullable=False)
+    age = db.Column(db.Integer)
+    favorite_subject = db.Column(db.String(150))
+    learning_goals = db.Column(db.Text)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+with app.app_context():
+    db.create_all()
 
 
 def convert_md_to_html(md_text):
     html = markdown.markdown(md_text,
                              extensions=['fenced_code', 'tables', 'toc', 'footnotes', 'attr_list', 'md_in_html'])
     soup = BeautifulSoup(html, 'lxml')
-
-    for code in soup.find_all('code'):
-        parent = code.parent
-        if parent.name == 'pre':
-            language = code.get('class', [''])[0].replace('language-', '') or 'text'
-            code['class'] = f'language-{language}'
-            copy_button_html = f'''
-            <div class="code-header">
-                <span class="language-label">{language}</span>
-                <button class="copy-button" onclick="copyToClipboard(this)">
-                    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-copy js-clipboard-copy-icon">
-                        <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path>
-                        <path d="M5 1.75C5 .784 5 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
-                    </svg>
-                </button>
-            </div>
-            '''
-            parent.insert_before(BeautifulSoup(copy_button_html, 'lxml'))
-
     return soup.prettify()
-
-
-def read_docx(file_path):
-    """读取 docx 文件内容 Read content from a docx file"""
-    doc = Document(file_path)
-    full_text = []
-    for para in doc.paragraphs:
-        full_text.append(para.text)
-    return '\n'.join(full_text)
-
-
-def read_pdf(file_path):
-    """读取 pdf 文件内容 Read content from a pdf file"""
-    full_text = []
-    with open(file_path, 'rb') as file:
-        reader = PyPDF2.PdfReader(file)
-        for page_num in range(len(reader.pages)):
-            page = reader.pages[page_num]
-            full_text.append(page.extract_text())
-    return '\n'.join(full_text)
-
-
-def process_all_files(directory):
-    """处理所有的 docx 和 pdf 文件 Process all docx and pdf files"""
-    combined_content = []
-    for filename in os.listdir(directory):
-        file_path = os.path.join(directory, filename)
-        if filename.endswith('.docx'):
-            print(f"Processing file: {file_path}")
-            content = read_docx(file_path)
-            combined_content.append(content)
-        elif filename.endswith('.pdf'):
-            print(f"Processing file: {file_path}")
-            content = read_pdf(file_path)
-            combined_content.append(content)
-    return combined_content
 
 
 def get_response_from_openai(messages):
@@ -101,32 +66,75 @@ def get_response_from_openai(messages):
         return f"Error: {str(e)}"
 
 
-def initial_setup_prompt():
+def initial_setup_prompt(user):
     initial_prompt = [
         {"role": "system",
-         "content": "你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。请根据这些内容生成一道中考形式的英语题目，要有不同形式的，请学习中考真题里的风格，谢谢！每次只要一道就行了，一道，不要太多，拿这道题目来来考考你的学生。要当老师！你是一位老师，不是别人。学生问你你是谁，你就说你是由王子高开发的 AI 老师，是帮助你们学习的。你要主动，你要问学生名字，给他们出题目。一次不要说太多，要一点一点来，要想真正的老师。"}
+         "content": f"你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。请根据这些内容生成一道中考形式的英语题目，要有不同形式的，请学习中考真题里的风格，谢谢！每次只要一道就行了，一道，不要太多，拿这道题目来来考考你的学生。要当老师！你是一位老师，不是别人。学生问你你是谁，你就说你是由王子高开发的 AI 老师，是帮助你们学习的。你要主动，你要问学生名字，给他们出题目。一次不要说太多，要一点一点来，要想真正的老师。学生的名字是 {user.name}，他最喜欢的科目是 {user.favorite_subject}，他的学习目标是 {user.learning_goals}。"}
     ]
 
     response = get_response_from_openai(initial_prompt)
     session['conversation'].append({"role": "assistant", "content": response})
 
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        name = request.form['name']
+        user = User(username=username, name=name)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            return redirect(url_for('onboarding'))
+        else:
+            return 'Invalid credentials'
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+
+@app.route('/onboarding', methods=['GET', 'POST'])
+def onboarding():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    if request.method == 'POST':
+        user.age = request.form['age']
+        user.favorite_subject = request.form['favorite_subject']
+        user.learning_goals = request.form['learning_goals']
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template('onboarding.html', user=user)
+
+
 @app.route('/')
 def home():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
     if 'conversation' not in session:
         session['conversation'] = []
-        initial_setup_prompt()
-    return render_template('index.html', messages=session['conversation'])
-
-
-@app.route('/new_session', methods=['POST'])
-def new_session():
-    global data_loaded, combined_content
-    session.clear()  # 清空会话和缓存
-    session['conversation'] = []
-    data_loaded = False  # Reset the data loading state
-    combined_content = ""  # Clear the combined content
-    return jsonify({'message': 'New session started and data reloaded.'})
+        initial_setup_prompt(user)
+    return render_template('index.html', messages=session['conversation'], user=user)
 
 
 @app.route('/ask', methods=['POST'])
@@ -146,17 +154,6 @@ def ask():
 
     session['conversation'] = messages
     return jsonify({'response': response})
-
-
-@app.before_request
-def load_data():
-    global data_loaded, combined_content
-
-    if not data_loaded:
-        directory = 'data'  # .docx 和 .pdf 文件所在目录 Directory containing the .docx and .pdf files
-        combined_content_list = process_all_files(directory)
-        combined_content = '\n'.join(combined_content_list)
-        data_loaded = True
 
 
 if __name__ == '__main__':

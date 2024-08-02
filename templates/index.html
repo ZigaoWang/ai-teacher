@@ -7,480 +7,92 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" id="prism-theme">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Text:wght@400;600&display=swap');
-
-        :root {
-            --bg-color-light: #f5f5f5;
-            --bg-color-dark: #1e1e1e;
-            --text-color-light: #333;
-            --text-color-dark: #ddd;
-            --primary-color: #007bff;
-            --secondary-color: #f0f0f0;
-            --border-color-light: #ddd;
-            --border-color-dark: #444;
-            --link-color-light: #007bff;
-            --link-color-dark: #1e90ff;
-        }
-
-        body {
-            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-color-light);
-            color: var(--text-color-light);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        a {
-            color: var(--link-color-light);
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        .dark-mode a {
-            color: var(--link-color-dark);
-        }
-
-        .dark-mode {
-            background-color: var(--bg-color-dark);
-            color: var(--text-color-dark);
-        }
-
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .chat-header {
-            background-color: var(--primary-color);
-            color: #fff;
-            padding: 20px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 1.5em;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .chat-messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .chat-message {
-            margin-bottom: 20px;
-            display: flex;
-            max-width: 70%;
-        }
-
-        .chat-message.user {
-            justify-content: flex-end;
-            align-self: flex-end;
-            margin-left: auto;
-        }
-
-        .chat-message.bot {
-            justify-content: flex-start;
-            align-self: flex-start;
-        }
-
-        .message-content {
-            padding: 10px 15px;
-            border-radius: 15px;
-            word-wrap: break-word;
-            max-width: 100%;
-            font-size: 1em;
-            line-height: 1.5;
-            position: relative;
-        }
-
-        .chat-message.user .message-content {
-            background-color: var(--primary-color);
-            color: #fff;
-        }
-
-        .chat-message.bot .message-content {
-            background-color: var(--secondary-color);
-            color: var(--text-color-light);
-        }
-
-        .dark-mode .chat-message.bot .message-content {
-            background-color: #333;
-            color: var(--text-color-dark);
-        }
-
-        .chat-input-container {
-            position: sticky;
-            bottom: 0;
-            background-color: var(--bg-color-light);
-            padding: 20px;
-            border-top: 1px solid var(--border-color-light);
-            transition: border-color 0.3s;
-        }
-
-        .dark-mode .chat-input-container {
-            background-color: var(--bg-color-dark);
-            border-color: var(--border-color-dark);
-        }
-
-        .chat-input {
-            display: flex;
-        }
-
-        .chat-input textarea {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid var(--border-color-light);
-            border-radius: 12px;
-            resize: none;
-            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            font-size: 1em;
-            transition: border-color 0.3s, background-color 0.3s, color 0.3s;
-        }
-
-        .dark-mode .chat-input textarea {
-            border-color: var(--border-color-dark);
-            background-color: var(--bg-color-dark);
-            color: var(--text-color-dark);
-        }
-
-        .chat-input button {
-            margin-left: 10px;
-            padding: 10px 20px;
-            background-color: var(--primary-color);
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            font-size: 1em;
-            transition: background-color 0.3s;
-            aria-label: "Ask question";
-        }
-
-        .chat-input button:hover {
-            background-color: #0056b3;
-        }
-
-        @media (max-width: 768px) {
-            .chat-container {
-                width: 100%;
-            }
-        }
-
-        /* CSS for Markdown rendering */
-        .code-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f4f4f4;
-            padding: 5px 10px;
-            border-top-left-radius: 5px;
-            border-top-right-radius: 5px;
-        }
-
-        .language-label {
-            font-weight: bold;
-            font-size: 0.9em;
-            color: #333;
-        }
-
-        .copy-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            margin-left: 10px;
-            font-size: 1em;
-            color: var(--primary-color);
-            aria-label: "Copy code";
-        }
-
-        .copy-button:hover {
-            color: #0056b3;
-        }
-
-        pre {
-            background: #f4f4f4;
-            padding: 10px;
-            border-radius: 5px;
-            overflow: auto;
-            position: relative;
-            color: #333;
-            margin: 0;
-        }
-
-        code {
-            background: #f4f4f4;
-            padding: 2px 5px;
-            border-radius: 3px;
-        }
-
-        .dark-mode pre {
-            background: #2d2d2d;
-            color: #f8f8f2;
-        }
-
-        /* Toggle Switch */
-        .toggle-switch {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .toggle-switch .icon {
-            font-size: 1.5em;
-            margin-left: 10px;
-            transition: color 0.3s;
-        }
-
-        .intro {
-            text-align: center;
-            padding: 20px;
-            background-color: var(--secondary-color);
-            border-radius: 12px;
-            margin: 20px;
-        }
-
-        .dark-mode .intro {
-            background-color: #333;
-        }
-
-        .intro h1 {
-            margin-top: 0;
-            font-size: 2em;
-            color: var(--primary-color);
-        }
-
-        .intro p {
-            font-size: 1.2em;
-            line-height: 1.5;
-        }
-
-        .intro ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .intro ul li {
-            background-color: var(--secondary-color);
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 1.1em;
-        }
-
-        .dark-mode .intro ul li {
-            background-color: #444;
-        }
-
-        /* Loading Screen */
-        .loading-screen {
-            display: flex;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            font-size: 1.5em;
-            flex-direction: column;
-            color: var(--primary-color);
-            animation: fadeIn 1s ease-in-out forwards;
-        }
-
-        .dark-mode .loading-screen {
-            background-color: rgba(0, 0, 0, 0.8);
-            color: var(--text-color-dark);
-        }
-
-        @keyframes fadeIn {
-            0% {
-                opacity: 0;
-            }
-            100% {
-                opacity: 1;
-            }
-        }
-
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: var(--primary-color);
-            animation: spin 1s ease infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .motivational-message {
-            margin-top: 20px;
-            font-size: 1.2em;
-            color: var(--primary-color);
-            animation: bounce 1.5s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <div class="loading-screen" id="loading-screen">
-        <div class="spinner"></div>
-        <div class="motivational-message">学习是美好的旅程，请稍候...</div>
-    </div>
-    <div class="chat-container" id="chat-container" style="display: none;">
+    <div class="chat-container">
         <div class="chat-header">
             <span>AI老师</span>
             <div class="header-buttons">
-            <div class="toggle-switch" onclick="toggleMode()" role="button" aria-label="Toggle light/dark mode">
-                <i class="fas fa-sun icon" id="mode-icon"></i>
+                <div class="toggle-switch" onclick="toggleMode()" role="button" aria-label="Toggle light/dark mode">
+                    <i class="fas fa-sun icon" id="mode-icon"></i>
+                </div>
+                <a href="/logout" class="logout-button">登出</a>
+            </div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            {% for message in messages %}
+            <div class="chat-message {{ message.role }}">
+                <div class="message-content">
+                    {{ message.content|safe }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="chat-input-container">
+            <div class="chat-input">
+                <textarea id="question" rows="1" placeholder="提问或输入内容..." onkeypress="handleKeyPress(event)" aria-label="Ask a question"></textarea>
+                <button onclick="askQuestion()">发送</button>
             </div>
         </div>
     </div>
-    <div class="chat-messages" id="chat-messages">
-        {% for message in messages %}
-        <div class="chat-message {{ message.role }}">
-            <div class="message-content">
-                {{ message.content|safe }}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    <div class="chat-input-container">
-        <div class="chat-input">
-            <textarea id="question" rows="1" placeholder="提问或输入内容..." onkeypress="handleKeyPress(event)" aria-label="Ask a question"></textarea>
-            <button onclick="askQuestion()">发送</button>
-        </div>
-    </div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
-<script>
-    function copyToClipboard(button) {
-        const codeBlock = button.parentElement.nextElementSibling.querySelector('code') || button.parentElement.nextElementSibling;
-        const textArea = document.createElement('textarea');
-        textArea.value = codeBlock.textContent;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
+    <script>
+        async function askQuestion() {
+            const question = document.getElementById('question').value;
+            if (!question.trim()) {
+                alert('请输入内容。');
+                return;
+            }
+            const chatMessages = document.getElementById('chat-messages');
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('chat-message', 'user');
+            userMessageDiv.innerHTML = `<div class="message-content">${question}</div>`;
+            chatMessages.appendChild(userMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        // Change the button icon to a checkmark
-        const originalIcon = button.innerHTML;
-        button.innerHTML = `
-            <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check">
-                <path fill-rule="evenodd" d="M13.78 3.22a.75.75 0 0 1 1.06 1.06l-8 8a.75.75 0 0 1-1.06 0l-4-4a.75.75 0 1 1 1.06-1.06L6 10.44l7.78-7.78z"></path>
-            </svg>`;
+            document.getElementById('question').value = '';
 
-        // Revert back to the original copy icon after 2 seconds
-        setTimeout(() => {
-            button.innerHTML = originalIcon;
-        }, 2000);
-    }
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.classList.add('chat-message', 'bot');
+            botMessageDiv.innerHTML = `<div class="message-content">生成中...</div>`;
+            chatMessages.appendChild(botMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    async function askQuestion() {
-        const question = document.getElementById('question').value;
-        if (!question.trim()) {
-            alert('请输入内容。');
-            return;
-        }
-        const chatMessages = document.getElementById('chat-messages');
-        const userMessageDiv = document.createElement('div');
-        userMessageDiv.classList.add('chat-message', 'user');
-        userMessageDiv.innerHTML = `<div class="message-content">${question}</div>`;
-        chatMessages.appendChild(userMessageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+            const response = await fetch(`/ask`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ question })
+            });
 
-        document.getElementById('question').value = '';
-
-        const botMessageDiv = document.createElement('div');
-        botMessageDiv.classList.add('chat-message', 'bot');
-        botMessageDiv.innerHTML = `<div class="message-content">生成中...</div>`;
-        chatMessages.appendChild(botMessageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        const response = await fetch(`/ask`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ question })
-        });
-
-        const data = await response.json();
-        botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}</div>`;
-        Prism.highlightAll();
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function handleKeyPress(event) {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            askQuestion();
-        }
-    }
-
-    window.onload = async function() {
-        // Set the initial mode
-        const mode = localStorage.getItem('mode') || 'light';
-        if (mode === 'dark') {
-            document.body.classList.add('dark-mode');
-            document.getElementById('mode-icon').classList.replace('fa-sun', 'fa-moon');
-            document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css";
-        } else {
-            document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css";
+            const data = await response.json();
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}</div>`;
+            Prism.highlightAll();
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        // Simulate loading process
-        setTimeout(() => {
-            document.getElementById('loading-screen').style.display = 'none';
-            document.getElementById('chat-container').style.display = 'flex';
-        }, 3000); // Simulate a 3-second loading time
-    };
-
-    function toggleMode() {
-        const isDarkMode = document.body.classList.toggle('dark-mode');
-        localStorage.setItem('mode', isDarkMode ? 'dark' : 'light');
-        const icon = document.getElementById('mode-icon');
-        if (isDarkMode) {
-            icon.classList.replace('fa-sun', 'fa-moon');
-            document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css";
-        } else {
-            icon.classList.replace('fa-moon', 'fa-sun');
-            document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css";
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                askQuestion();
+            }
         }
-    }
-</script>
+
+        function toggleMode() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('mode', isDarkMode ? 'dark' : 'light');
+            const icon = document.getElementById('mode-icon');
+            if (isDarkMode) {
+                icon.classList.replace('fa-sun', 'fa-moon');
+                document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css";
+            } else {
+                icon.classList.replace('fa-moon', 'fa-sun');
+                document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css";
+            }
+        }
+    </script>
 </body>
 </html>
