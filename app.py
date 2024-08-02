@@ -67,6 +67,7 @@ def read_pdf(file_path):
 def home():
     if 'conversation' not in session:
         session['conversation'] = []
+        initial_setup_prompt()
     return render_template('index.html', messages=session['conversation'])
 
 @app.route('/new_session', methods=['POST'])
@@ -74,6 +75,7 @@ def new_session():
     session.clear()  # 清空会话和缓存
     session['conversation'] = []
     load_data()  # 重新加载数据
+    initial_setup_prompt()  # 重新设置初始提示
     return jsonify({'message': 'New session started and data reloaded.'})
 
 @app.route('/ask', methods=['POST'])
@@ -109,7 +111,7 @@ def load_data():
         for index, chunk in enumerate(chunks):
             openai_messages = [
                 {"role": "system", "content": f"以下是一些中考英语真题内容的一部分：\n{chunk}"},
-                {"role": "user", "content": f"你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。请根据这些内容生成一道中考形式的英语题目，要有不同形式的，请学习中考真题里的风格，谢谢！每次只要一道就行了，一道，不要太多，拿这道题目来来考考你的学生。要当老师！你是一位老师，不是别人。学生问你你是谁，你就说你是有王子高开发的 AI 老师，是帮助你们学习的。你要主动，你要问学生名字，给他们出题目。请阅读以上内容，并回复'训练数据 #{index + 1} 输入完毕'。不要回复别的。"}
+                {"role": "user", "content": f"请阅读以上内容，并回复'训练数据 #{index + 1} 输入完毕'。不要回复别的。"}
             ]
             response = get_response_from_openai(openai_messages)
             print(response)  # Print AI's response to verify it outputs '训练数据 #[x] 输入完毕'
@@ -144,6 +146,14 @@ def get_response_from_openai(messages):
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"Error: {str(e)}"
+
+def initial_setup_prompt():
+    initial_prompt = [
+        {"role": "system", "content": "你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。请根据这些内容生成一道中考形式的英语题目，要有不同形式的，请学习中考真题里的风格，谢谢！每次只要一道就行了，一道，不要太多，拿这道题目来来考考你的学生。要当老师！你是一位老师，不是别人。学生问你你是谁，你就说你是由王子高开发的 AI 老师，是帮助你们学习的。你要主动，你要问学生名字，给他们出题目。一次不要说太多，要一点一点来，要想真正的老师。"}
+    ]
+
+    response = get_response_from_openai(initial_prompt)
+    session['conversation'].append({"role": "assistant", "content": response})
 
 if __name__ == '__main__':
     app.run(debug=True)
