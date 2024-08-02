@@ -1,27 +1,13 @@
-:root {
-    --bg-color-light: #f5f5f5;
-    --bg-color-dark: #1e1e1e;
-    --text-color-light: #333;
-    --text-color-dark: #ddd;
-    --primary-color: #007bff;
-    --secondary-color: #f0f0f0;
-    --border-color-light: #ddd;
-    --border-color-dark: #444;
-    --link-color-light: #007bff;
-    --link-color-dark: #1e90ff;
-}
-
 body {
-    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: var(--bg-color-light);
-    color: var(--text-color-light);
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
-    transition: background-color 0.3s, color 0.3s;
 }
 
 .auth-container {
@@ -58,7 +44,7 @@ body {
 
 .auth-container button {
     padding: 10px;
-    background-color: var(--primary-color);
+    background-color: #007bff;
     color: #fff;
     border: none;
     border-radius: 5px;
@@ -75,7 +61,7 @@ body {
 }
 
 .auth-container a {
-    color: var(--primary-color);
+    color: #007bff;
 }
 
 .chat-container {
@@ -87,7 +73,7 @@ body {
 }
 
 .chat-header {
-    background-color: var(--primary-color);
+    background-color: #007bff;
     color: #fff;
     padding: 20px;
     text-align: center;
@@ -132,32 +118,19 @@ body {
 }
 
 .chat-message.user .message-content {
-    background-color: var(--primary-color);
+    background-color: #007bff;
     color: #fff;
 }
 
 .chat-message.bot .message-content {
-    background-color: var(--secondary-color);
-    color: var(--text-color-light);
-}
-
-.dark-mode .chat-message.bot .message-content {
-    background-color: #333;
-    color: var(--text-color-dark);
+    background-color: #f0f0f0;
+    color: #333;
 }
 
 .chat-input-container {
-    position: sticky;
-    bottom: 0;
-    background-color: var(--bg-color-light);
+    background-color: #f4f4f4;
     padding: 20px;
-    border-top: 1px solid var(--border-color-light);
-    transition: border-color 0.3s;
-}
-
-.dark-mode .chat-input-container {
-    background-color: var(--bg-color-dark);
-    border-color: var(--border-color-dark);
+    border-top: 1px solid #ddd;
 }
 
 .chat-input {
@@ -167,214 +140,27 @@ body {
 .chat-input textarea {
     flex: 1;
     padding: 10px;
-    border: 1px solid var(--border-color-light);
+    border: 1px solid #ddd;
     border-radius: 12px;
     resize: none;
-    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     font-size: 1em;
-    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
-}
-
-.dark-mode .chat-input textarea {
-    border-color: var(--border-color-dark);
-    background-color: var(--bg-color-dark);
-    color: var(--text-color-dark);
 }
 
 .chat-input button {
     margin-left: 10px;
     padding: 10px 20px;
-    background-color: var(--primary-color);
+    background-color: #007bff;
     color: #fff;
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     font-size: 1em;
-    transition: background-color 0.3s;
-    aria-label: "Ask question";
 }
 
 .chat-input button:hover {
     background-color: #0056b3;
-}
-
-@media (max-width: 768px) {
-    .chat-container {
-        width: 100%;
-    }
-}
-
-/* CSS for Markdown rendering */
-.code-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f4f4f4;
-    padding: 5px 10px;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-}
-
-.language-label {
-    font-weight: bold;
-    font-size: 0.9em;
-    color: #333;
-}
-
-.copy-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 1em;
-    color: var(--primary-color);
-    aria-label: "Copy code";
-}
-
-.copy-button:hover {
-    color: #0056b3;
-}
-
-pre {
-    background: #f4f4f4;
-    padding: 10px;
-    border-radius: 5px;
-    overflow: auto;
-    position: relative;
-    color: #333;
-    margin: 0;
-}
-
-code {
-    background: #f4f4f4;
-    padding: 2px 5px;
-    border-radius: 3px;
-}
-
-.dark-mode pre {
-    background: #2d2d2d;
-    color: #f8f8f2;
-}
-
-/* Toggle Switch */
-.toggle-switch {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-.toggle-switch .icon {
-    font-size: 1.5em;
-    margin-left: 10px;
-    transition: color 0.3s;
-}
-
-.intro {
-    text-align: center;
-    padding: 20px;
-    background-color: var(--secondary-color);
-    border-radius: 12px;
-    margin: 20px;
-}
-
-.dark-mode .intro {
-    background-color: #333;
-}
-
-.intro h1 {
-    margin-top: 0;
-    font-size: 2em;
-    color: var(--primary-color);
-}
-
-.intro p {
-    font-size: 1.2em;
-    line-height: 1.5;
-}
-
-.intro ul {
-    list-style: none;
-    padding: 0;
-}
-
-.intro ul li {
-    background-color: var(--secondary-color);
-    border-radius: 8px;
-    padding: 10px;
-    margin: 10px 0;
-    font-size: 1.1em;
-}
-
-.dark-mode .intro ul li {
-    background-color: #444;
-}
-
-/* Loading Screen */
-.loading-screen {
-    display: flex;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.9);
-    z-index: 9999;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    font-size: 1.5em;
-    flex-direction: column;
-    color: var(--primary-color);
-    animation: fadeIn 1s ease-in-out forwards;
-}
-
-.dark-mode .loading-screen {
-    background-color: rgba(0, 0, 0, 0.8);
-    color: var(--text-color-dark);
-}
-
-@keyframes fadeIn {
-    0% {
-        opacity: 0;
-    }
-    100% {
-        opacity: 1;
-    }
-}
-
-.spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border-left-color: var(--primary-color);
-    animation: spin 1s ease infinite;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-.motivational-message {
-    margin-top: 20px;
-    font-size: 1.2em;
-    color: var(--primary-color);
-    animation: bounce 1.5s infinite;
-}
-
-@keyframes bounce {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-10px);
-    }
 }
 
 .logout-button {
@@ -389,5 +175,5 @@ code {
 
 .logout-button:hover {
     background-color: #fff;
-    color: var(--primary-color);
+    color: #007bff;
 }

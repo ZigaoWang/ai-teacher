@@ -6,19 +6,13 @@
     <title>AI老师</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" id="prism-theme">
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
             <span>AI老师</span>
-            <div class="header-buttons">
-                <div class="toggle-switch" onclick="toggleMode()" role="button" aria-label="Toggle light/dark mode">
-                    <i class="fas fa-sun icon" id="mode-icon"></i>
-                </div>
-                <a href="/logout" class="logout-button">登出</a>
-            </div>
+            <a href="/logout" class="logout-button">登出</a>
         </div>
         <div class="chat-messages" id="chat-messages">
             {% for message in messages %}
@@ -37,7 +31,6 @@
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
     <script>
         async function askQuestion() {
             const question = document.getElementById('question').value;
@@ -78,19 +71,6 @@
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 askQuestion();
-            }
-        }
-
-        function toggleMode() {
-            const isDarkMode = document.body.classList.toggle('dark-mode');
-            localStorage.setItem('mode', isDarkMode ? 'dark' : 'light');
-            const icon = document.getElementById('mode-icon');
-            if (isDarkMode) {
-                icon.classList.replace('fa-sun', 'fa-moon');
-                document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css";
-            } else {
-                icon.classList.replace('fa-moon', 'fa-sun');
-                document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css";
             }
         }
     </script>

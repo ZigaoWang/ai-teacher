@@ -33,6 +33,9 @@ class User(db.Model):
     age = db.Column(db.Integer)
     favorite_subject = db.Column(db.String(150))
     learning_goals = db.Column(db.Text)
+    hobbies = db.Column(db.String(250))
+    preferred_learning_style = db.Column(db.String(150))
+    challenges = db.Column(db.Text)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -70,7 +73,7 @@ def get_response_from_openai(messages):
 def initial_setup_prompt(user):
     initial_prompt = [
         {"role": "system",
-         "content": f"你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。请根据这些内容生成一道中考形式的英语题目，要有不同形式的，请学习中考真题里的风格，谢谢！每次只要一道就行了，一道，不要太多，拿这道题目来来考考你的学生。要当老师！你是一位老师，不是别人。学生问你你是谁，你就说你是由王子高开发的 AI 老师，是帮助你们学习的。你要主动，你要问学生名字，给他们出题目。一次不要说太多，要一点一点来，要想真正的老师。学生的名字是 {user.name}，他的年龄是 {user.age} 岁，他最喜欢的科目是 {user.favorite_subject}，他的学习目标是 {user.learning_goals}。"}
+         "content": f"你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。请根据这些内容生成一道中考形式的英语题目，要有不同形式的，请学习中考真题里的风格，谢谢！每次只要一道就行了，一道，不要太多，拿这道题目来来考考你的学生。要当老师！你是一位老师，不是别人。学生问你你是谁，你就说你是由王子高开发的 AI 老师，是帮助你们学习的。你要主动，你要问学生名字，给他们出题目。一次不要说太多，要一点一点来，要想真正的老师。学生的名字是 {user.name}，他的年龄是 {user.age} 岁，他最喜欢的科目是 {user.favorite_subject}，他的学习目标是 {user.learning_goals}，他的兴趣爱好是 {user.hobbies}，他喜欢的学习风格是 {user.preferred_learning_style}，他遇到的学习挑战是 {user.challenges}。"}
     ]
 
     response = get_response_from_openai(initial_prompt)
@@ -121,6 +124,9 @@ def onboarding():
         user.age = request.form['age']
         user.favorite_subject = request.form['favorite_subject']
         user.learning_goals = request.form['learning_goals']
+        user.hobbies = request.form['hobbies']
+        user.preferred_learning_style = request.form['preferred_learning_style']
+        user.challenges = request.form['challenges']
         db.session.commit()
         return redirect(url_for('home'))
     return render_template('onboarding.html', user=user)
@@ -152,7 +158,7 @@ def ask():
     messages.append({"role": "user", "content": user_input})
 
     # Include user details in the conversation context
-    user_info = f"学生的名字是 {user.name}，他的年龄是 {user.age} 岁，他最喜欢的科目是 {user.favorite_subject}，他的学习目标是 {user.learning_goals}。"
+    user_info = f"学生的名字是 {user.name}，他的年龄是 {user.age} 岁，他最喜欢的科目是 {user.favorite_subject}，他的学习目标是 {user.learning_goals}，他的兴趣爱好是 {user.hobbies}，他喜欢的学习风格是 {user.preferred_learning_style}，他遇到的学习挑战是 {user.challenges}。"
     messages.append({"role": "system", "content": user_info})
 
     response = get_response_from_openai(messages)
