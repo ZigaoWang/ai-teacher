@@ -13,7 +13,8 @@ load_dotenv()
 
 # Get the OpenAI API key from environment variables
 api_key = os.getenv('OPENAI_API_KEY')
-client = openai.OpenAI(api_key=api_key)
+base_url = os.getenv('OPENAI_BASE_URL')
+client = openai.OpenAI(api_key=api_key, base_url=base_url)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
