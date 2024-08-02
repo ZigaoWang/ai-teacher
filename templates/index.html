@@ -288,7 +288,7 @@
 
         /* Loading Screen */
         .loading-screen {
-            display: none;
+            display: flex;
             position: fixed;
             top: 0;
             left: 0;
@@ -304,210 +304,196 @@
         }
 
         .dark-mode .loading-screen {
-                background-color: rgba(0, 0, 0, 0.8);
-                color: var(--text-color-dark);
-            }
+            background-color: rgba(0, 0, 0, 0.8);
+            color: var(--text-color-dark);
+        }
 
-            .spinner {
-                border: 4px solid rgba(0, 0, 0, 0.1);
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                border-left-color: var(--primary-color);
-                animation: spin 1s ease infinite;
-            }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: var(--primary-color);
+            animation: spin 1s ease infinite;
+        }
 
-            @keyframes spin {
-                0% {
-                    transform: rotate(0deg);
-                }
-                100% {
-                    transform: rotate(360deg);
-                }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
             }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
 
-            .progress-container {
-                width: 80%;
-                background-color: var(--secondary-color);
-                border-radius: 12px;
-                margin-top: 20px;
-            }
+        .progress-container {
+            width: 80%;
+            background-color: var(--secondary-color);
+            border-radius: 12px;
+            margin-top: 20px;
+        }
 
-            .dark-mode .progress-container {
-                background-color: #444;
-            }
+        .dark-mode .progress-container {
+            background-color: #444;
+        }
 
-            .progress-bar {
-                width: 0%;
-                height: 20px;
-                background-color: var(--primary-color);
-                border-radius: 12px;
-                transition: width 0.3s;
-            }
+        .progress-bar {
+            width: 0%;
+            height: 20px;
+            background-color: var(--primary-color);
+            border-radius: 12px;
+            transition: width 0.3s;
+        }
 
-            .progress-text {
-                margin-top: 10px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="loading-screen" id="loading-screen">
-            <div class="spinner"></div>
-            <div class="progress-container">
-                <div class="progress-bar" id="progress-bar"></div>
-            </div>
-            <div class="progress-text" id="progress-text">加载中，请稍候...</div>
+        .progress-text {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
         </div>
-        <div class="chat-container" id="chat-container" style="display: none;">
-            <div class="chat-header">
-                <span>AI老师</span>
-                <div class="header-buttons">
-                    <div class="toggle-switch" onclick="toggleMode()" role="button" aria-label="Toggle light/dark mode">
-                        <i class="fas fa-sun icon" id="mode-icon"></i>
-                    </div>
-                    <button onclick="clearSession()" aria-label="Clear session">清空记忆</button>
+        <div class="progress-text" id="progress-text">加载中，请稍候...</div>
+    </div>
+    <div class="chat-container" id="chat-container" style="display: none;">
+        <div class="chat-header">
+            <span>AI老师</span>
+            <div class="header-buttons">
+                <div class="toggle-switch" onclick="toggleMode()" role="button" aria-label="Toggle light/dark mode">
+                    <i class="fas fa-sun icon" id="mode-icon"></i>
                 </div>
-            </div>
-            <div class="chat-messages" id="chat-messages">
-                {% for message in messages %}
-                <div class="chat-message {{ message.role }}">
-                    <div class="message-content">
-                        {{ message.content|safe }}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="chat-input-container">
-                <div class="chat-input">
-                    <textarea id="question" rows="1" placeholder="提问或输入内容..." onkeypress="handleKeyPress(event)" aria-label="Ask a question"></textarea>
-                    <button onclick="askQuestion()">发送</button>
-                </div>
+                <button onclick="clearSession()" aria-label="Clear session">清空记忆</button>
             </div>
         </div>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
-        <script>
-            function copyToClipboard(button) {
-                const codeBlock = button.parentElement.nextElementSibling.querySelector('code') || button.parentElement.nextElementSibling;
-                const textArea = document.createElement('textarea');
-                textArea.value = codeBlock.textContent;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
+        <div class="chat-messages" id="chat-messages">
+            {% for message in messages %}
+            <div class="chat-message {{ message.role }}">
+                <div class="message-content">
+                    {{ message.content|safe }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="chat-input-container">
+            <div class="chat-input">
+                <textarea id="question" rows="1" placeholder="提问或输入内容..." onkeypress="handleKeyPress(event)" aria-label="Ask a question"></textarea>
+                <button onclick="askQuestion()">发送</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
+    <script>
+        function copyToClipboard(button) {
+            const codeBlock = button.parentElement.nextElementSibling.querySelector('code') || button.parentElement.nextElementSibling;
+            const textArea = document.createElement('textarea');
+            textArea.value = codeBlock.textContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
 
-                // Change the button icon to a checkmark
-                const originalIcon = button.innerHTML;
-                button.innerHTML = `
-                    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check">
-                        <path fill-rule="evenodd" d="M13.78 3.22a.75.75 0 0 1 1.06 1.06l-8 8a.75.75 0 0 1-1.06 0l-4-4a.75.75 0 1 1 1.06-1.06L6 10.44l7.78-7.78z"></path>
-                    </svg>`;
+            // Change the button icon to a checkmark
+            const originalIcon = button.innerHTML;
+            button.innerHTML = `
+                <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check">
+                    <path fill-rule="evenodd" d="M13.78 3.22a.75.75 0 0 1 1.06 1.06l-8 8a.75.75 0 0 1-1.06 0l-4-4a.75.75 0 1 1 1.06-1.06L6 10.44l7.78-7.78z"></path>
+                </svg>`;
 
-                // Revert back to the original copy icon after 2 seconds
-                setTimeout(() => {
-                    button.innerHTML = originalIcon;
-                }, 2000);
+            // Revert back to the original copy icon after 2 seconds
+            setTimeout(() => {
+                button.innerHTML = originalIcon;
+            }, 2000);
+        }
+
+        async function askQuestion() {
+            const question = document.getElementById('question').value;
+            if (!question.trim()) {
+                alert('请输入内容。');
+                return;
             }
+            const chatMessages = document.getElementById('chat-messages');
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('chat-message', 'user');
+            userMessageDiv.innerHTML = `<div class="message-content">${question}</div>`;
+            chatMessages.appendChild(userMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            async function askQuestion() {
-                const question = document.getElementById('question').value;
-                if (!question.trim()) {
-                    alert('请输入内容。');
-                    return;
-                }
-                const chatMessages = document.getElementById('chat-messages');
-                const userMessageDiv = document.createElement('div');
-                userMessageDiv.classList.add('chat-message', 'user');
-                userMessageDiv.innerHTML = `<div class="message-content">${question}</div>`;
-                chatMessages.appendChild(userMessageDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+            document.getElementById('question').value = '';
 
-                document.getElementById('question').value = '';
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.classList.add('chat-message', 'bot');
+            botMessageDiv.innerHTML = `<div class="message-content">生成中...</div>`;
+            chatMessages.appendChild(botMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
 
-                const botMessageDiv = document.createElement('div');
-                botMessageDiv.classList.add('chat-message', 'bot');
-                botMessageDiv.innerHTML = `<div class="message-content">生成中...</div>`;
-                chatMessages.appendChild(botMessageDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+            const response = await fetch(`/ask`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ question })
+            });
 
-                const response = await fetch(`/ask`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ question })
+            const data = await response.json();
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}</div>`;
+            Prism.highlightAll();
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                askQuestion();
+            }
+        }
+
+        async function clearSession() {
+            if (confirm('确定要清空记忆吗？')) {
+                const response = await fetch('/new_session', {
+                    method: 'POST'
                 });
 
                 const data = await response.json();
-                botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}</div>`;
-                Prism.highlightAll();
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
-
-            function handleKeyPress(event) {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    askQuestion();
+                if (data.message) {
+                    location.reload();
                 }
             }
+        }
 
-            async function clearSession() {
-                if (confirm('确定要清空记忆吗？')) {
-                    const response = await fetch('/new_session', {
-                        method: 'POST'
-                    });
-
-                    const data = await response.json();
-                    if (data.message) {
-                        location.reload();
-                    }
-                }
+        window.onload = async function() {
+            // Set the initial mode
+            const mode = localStorage.getItem('mode') || 'light';
+            if (mode === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('mode-icon').classList.replace('fa-sun', 'fa-moon');
+                document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css";
+            } else {
+                document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css";
             }
 
-            window.onload = async function() {
-                // Set the initial mode
-                const mode = localStorage.getItem('mode') || 'light';
-                if (mode === 'dark') {
-                    document.body.classList.add('dark-mode');
-                    document.getElementById('mode-icon').classList.replace('fa-sun', 'fa-moon');
-                    document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css";
-                } else {
-                    document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css";
-                }
+            // Simulate loading process
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('chat-container').style.display = 'flex';
+            }, 3000); // Simulate a 3-second loading time
+        };
 
-                // Show loading screen
-                document.getElementById('loading-screen').style.display = 'flex';
-
-                // Simulate loading process
-                const eventSource = new EventSource('/load_data');
-                const progressBar = document.getElementById('progress-bar');
-                const progressText = document.getElementById('progress-text');
-                let count = 0;
-
-                eventSource.onmessage = function(event) {
-                    count++;
-                    progressBar.style.width = `${(count / 29) * 100}%`;
-                    progressText.innerText = event.data;
-                    if (event.data === '数据加载完成') {
-                        eventSource.close();
-                        document.getElementById('loading-screen').style.display = 'none';
-                        document.getElementById('chat-container').style.display = 'flex';
-                    }
-                };
-            };
-
-            function toggleMode() {
-                const isDarkMode = document.body.classList.toggle('dark-mode');
-                localStorage.setItem('mode', isDarkMode ? 'dark' : 'light');
-                const icon = document.getElementById('mode-icon');
-                if (isDarkMode) {
-                    icon.classList.replace('fa-sun', 'fa-moon');
-                    document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css";
-                } else {
-                    icon.classList.replace('fa-moon', 'fa-sun');
-                    document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css";
-                }
+        function toggleMode() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('mode', isDarkMode ? 'dark' : 'light');
+            const icon = document.getElementById('mode-icon');
+            if (isDarkMode) {
+                icon.classList.replace('fa-sun', 'fa-moon');
+                document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css";
+            } else {
+                icon.classList.replace('fa-moon', 'fa-sun');
+                document.getElementById('prism-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css";
             }
-        </script>
-    </body>
+        }
+    </script>
+</body>
 </html>
