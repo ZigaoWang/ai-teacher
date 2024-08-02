@@ -89,7 +89,9 @@ def login():
             session['user_id'] = user.id
             return redirect(url_for('onboarding'))
         else:
-            return 'Invalid credentials'
+            return render_template('login.html', error='用户名或密码错误。请重试，或者注册新账户。
+
+')
     return render_template('login.html')
 
 @app.route('/logout')
