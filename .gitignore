@@ -2,4 +2,4 @@
 .env
 cache.json
 flask_session
-students.db
+instance

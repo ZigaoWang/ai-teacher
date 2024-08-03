@@ -8,11 +8,10 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 
 from flask_session import Session
+from models import db, User
 
 # Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from models import db, User
 
 # Load environment variables from .env file
 load_dotenv()

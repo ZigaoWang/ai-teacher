@@ -1,5 +1,5 @@
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: -apple-system, "system-ui", "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
     background-color: #f4f4f4;
     color: #333;
     margin: 0;
@@ -11,7 +11,7 @@ body {
 }
 
 .auth-container {
-    max-width: 400px;
+    width: 300px;
     margin: 50px auto;
     padding: 20px;
     border: 1px solid #ddd;
@@ -176,6 +176,14 @@ body {
 .logout-button:hover {
     background-color: #fff;
     color: #007bff;
+}
+
+button {
+    -webkit-transition: all 0.3s ease;
+    -moz-transition: all 0.3s ease;
+    -o-transition: all 0.3s ease;
+    -ms-transition: all 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .error {
