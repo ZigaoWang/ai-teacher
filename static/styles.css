@@ -10,6 +10,7 @@ body {
     overflow: hidden;
 }
 
+/* 认证容器样式 */
 .auth-container {
     width: 300px;
     margin: 50px auto;
@@ -64,6 +65,7 @@ body {
     color: #007bff;
 }
 
+/* 聊天容器样式 */
 .chat-container {
     flex: 1;
     display: flex;
@@ -157,6 +159,9 @@ body {
     cursor: pointer;
     font-family: 'Arial', sans-serif;
     font-size: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .chat-input button:hover {

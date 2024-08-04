@@ -12,13 +12,32 @@
             background-color: red;
             color: white;
         }
+        .chat-message .message-content button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-left: 10px;
+            color: #007bff;
+        }
+        .chat-message .message-content button:hover {
+            color: #0056b3;
+        }
+        .chat-input button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-input button i {
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
             <span>AI 老师</span>
-            <a href="/logout" class="logout-button">登出</a>
+            <a href="/logout" class="logout-button" title="登出">登出</a>
         </div>
         <div class="chat-messages" id="chat-messages">
             {% for message in messages %}
@@ -26,7 +45,8 @@
                 <div class="message-content">
                     {{ message.content|safe }}
                     {% if message.role == 'assistant' %}
-                    <button onclick='speakText({{ message.content|tojson|safe }})'>🔊</button>
+                    <button onclick='speakText({{ message.content|tojson|safe }})' title="播放"><i class="fas fa-play"></i></button>
+                    <button onclick='stopAudio()' title="停止"><i class="fas fa-stop"></i></button>
                     {% endif %}
                 </div>
             </div>
@@ -34,9 +54,9 @@
         </div>
         <div class="chat-input-container">
             <div class="chat-input">
-                <textarea id="question" rows="1" placeholder="提问或输入内容..." onkeypress="handleKeyPress(event)" aria-label="Ask a question"></textarea>
-                <button onclick="askQuestion()">发送</button>
-                <button id="record-button" onclick="toggleRecording()">🎤</button>
+                <textarea id="question" rows="1" placeholder="提问或输入内容..." onkeypress="handleKeyPress(event)" aria-label="提问或输入内容"></textarea>
+                <button onclick="askQuestion()" title="发送"><i class="fas fa-paper-plane"></i>发送</button>
+                <button id="record-button" onclick="toggleRecording()" title="录音"><i class="fas fa-microphone"></i>录音</button>
             </div>
         </div>
     </div>
@@ -44,12 +64,13 @@
     <script>
         let recorder, audioStream;
         let isRecording = false;
+        let audio = new Audio(); // 全局音频对象
 
         async function toggleRecording() {
             const recordButton = document.getElementById('record-button');
             if (isRecording) {
                 recorder.stop();
-                recordButton.textContent = '🎤';
+                recordButton.innerHTML = '<i class="fas fa-microphone"></i>录音';
                 recordButton.classList.remove('recording');
                 isRecording = false;
             } else {
@@ -73,7 +94,7 @@
                     }
                 };
                 recorder.start();
-                recordButton.textContent = '⏹';
+                recordButton.innerHTML = '<i class="fas fa-stop"></i>停止';
                 recordButton.classList.add('recording');
                 isRecording = true;
             }
@@ -109,7 +130,7 @@
             });
 
             const data = await response.json();
-            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button onclick='speakText(${JSON.stringify(data.response)})'>🔊</button></div>`;
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button onclick='speakText(${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button onclick='stopAudio()' title="停止"><i class="fas fa-stop"></i></button></div>`;
             Prism.highlightAll();
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -132,11 +153,16 @@
 
             const data = await response.json();
             if (data.audio_url) {
-                const audio = new Audio(data.audio_url);
+                audio.src = data.audio_url;
                 audio.play();
             } else {
                 console.error('Error:', data.error);
             }
+        }
+
+        function stopAudio() {
+            audio.pause();
+            audio.currentTime = 0;
         }
     </script>
 </body>
