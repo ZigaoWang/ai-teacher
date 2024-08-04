@@ -7,31 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
     <link rel="stylesheet" href="/static/styles.css">
-    <style>
-        .recording {
-            background-color: red;
-            color: white;
-        }
-        .chat-message .message-content button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.2em;
-            margin-left: 10px;
-            color: #007bff;
-        }
-        .chat-message .message-content button:hover {
-            color: #0056b3;
-        }
-        .chat-input button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .chat-input button i {
-            margin-right: 5px;
-        }
-    </style>
 </head>
 <body>
     <div class="chat-container">
@@ -45,8 +20,8 @@
                 <div class="message-content">
                     {{ message.content|safe }}
                     {% if message.role == 'assistant' %}
-                    <button onclick='speakText({{ message.content|tojson|safe }})' title="播放"><i class="fas fa-play"></i></button>
-                    <button onclick='stopAudio()' title="停止"><i class="fas fa-stop"></i></button>
+                    <button class="audio-button" onclick='handleAudioButton(this, {{ message.content|tojson|safe }})' title="播放"><i class="fas fa-play"></i></button>
+                    <div class="spinner" style="display:none;"></div>
                     {% endif %}
                 </div>
             </div>
@@ -65,6 +40,7 @@
         let recorder, audioStream;
         let isRecording = false;
         let audio = new Audio(); // 全局音频对象
+        let audioCache = {}; // 缓存音频
 
         async function toggleRecording() {
             const recordButton = document.getElementById('record-button');
@@ -130,7 +106,7 @@
             });
 
             const data = await response.json();
-            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button onclick='speakText(${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button onclick='stopAudio()' title="停止"><i class="fas fa-stop"></i></button></div>`;
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="audio-button" onclick='handleAudioButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><div class="spinner" style="display:none;"></div></div>`;
             Prism.highlightAll();
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -142,27 +118,61 @@
             }
         }
 
-        async function speakText(text) {
-            const response = await fetch(`/tts`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ text })
-            });
+        async function handleAudioButton(button, text) {
+            const icon = button.querySelector('i');
+            const spinner = button.nextElementSibling;
 
-            const data = await response.json();
-            if (data.audio_url) {
-                audio.src = data.audio_url;
-                audio.play();
+            if (audio.paused || audio.src === "") {
+                // 开始播放
+                button.disabled = true;
+                icon.classList.remove('fa-play');
+                icon.classList.add('fa-spinner', 'fa-spin');
+                spinner.style.display = 'inline-block';
+
+                // 检查音频是否已缓存
+                if (audioCache[text]) {
+                    // 音频已缓存，直接播放
+                    audio.src = audioCache[text];
+                    audio.play();
+                } else {
+                    // 音频未缓存，生成音频
+                    const response = await fetch(`/tts`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ text })
+                    });
+
+                    const data = await response.json();
+                    if (data.audio_url) {
+                        audio.src = data.audio_url;
+                        audioCache[text] = data.audio_url; // 缓存音频
+                        audio.play();
+                    } else {
+                        console.error('Error:', data.error);
+                    }
+                }
+
+                audio.oncanplay = () => {
+                    button.disabled = false;
+                    icon.classList.remove('fa-spinner', 'fa-spin');
+                    icon.classList.add('fa-stop');
+                    spinner.style.display = 'none';
+                };
             } else {
-                console.error('Error:', data.error);
+                // 停止播放
+                audio.pause();
+                audio.currentTime = 0;
+                icon.classList.remove('fa-stop');
+                icon.classList.add('fa-play');
             }
-        }
 
-        function stopAudio() {
-            audio.pause();
-            audio.currentTime = 0;
+            // 监听音频播放结束事件
+            audio.onended = () => {
+                icon.classList.remove('fa-stop');
+                icon.classList.add('fa-play');
+            };
         }
     </script>
 </body>
