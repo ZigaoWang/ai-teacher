@@ -26,7 +26,7 @@
                 <div class="message-content">
                     {{ message.content|safe }}
                     {% if message.role == 'assistant' %}
-                    <button onclick='speakText({{ message.content|tojson }})'>🔊</button>
+                    <button onclick='speakText({{ message.content|tojson|safe }})'>🔊</button>
                     {% endif %}
                 </div>
             </div>
