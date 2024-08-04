@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
     <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        .recording {
+            background-color: red;
+            color: white;
+        }
+    </style>
 </head>
 <body>
     <div class="chat-container">
@@ -30,11 +36,49 @@
             <div class="chat-input">
                 <textarea id="question" rows="1" placeholder="提问或输入内容..." onkeypress="handleKeyPress(event)" aria-label="Ask a question"></textarea>
                 <button onclick="askQuestion()">发送</button>
+                <button id="record-button" onclick="toggleRecording()">🎤</button>
             </div>
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
     <script>
+        let recorder, audioStream;
+        let isRecording = false;
+
+        async function toggleRecording() {
+            const recordButton = document.getElementById('record-button');
+            if (isRecording) {
+                recorder.stop();
+                recordButton.textContent = '🎤';
+                recordButton.classList.remove('recording');
+                isRecording = false;
+            } else {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recorder = new MediaRecorder(audioStream);
+                recorder.ondataavailable = async event => {
+                    const audioBlob = event.data;
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'recording.wav');
+
+                    const response = await fetch('/stt', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.text) {
+                        document.getElementById('question').value = data.text;
+                    } else {
+                        console.error('Error:', data.error);
+                    }
+                };
+                recorder.start();
+                recordButton.textContent = '⏹';
+                recordButton.classList.add('recording');
+                isRecording = true;
+            }
+        }
+
         async function askQuestion() {
             const question = document.getElementById('question').value;
             if (!question.trim()) {
