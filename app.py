@@ -9,7 +9,6 @@ from flask import Flask, request, jsonify, render_template, session, redirect, u
 from flask_session import Session
 from models import db, User
 from pathlib import Path
-from pydub import AudioSegment
 import logging
 
 # Add the current directory to the Python path
@@ -216,7 +215,8 @@ def stt():
                 file=f,
                 response_format="text"
             )
-        text = transcription['text']
+        logging.info(f"Transcription response: {transcription}")
+        text = transcription if isinstance(transcription, str) else transcription['text']
     except Exception as e:
         logging.error(f"Error in stt endpoint: {str(e)}")
         return jsonify({'error': str(e)}), 400
