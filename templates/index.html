@@ -19,6 +19,9 @@
             <div class="chat-message {{ message.role }}">
                 <div class="message-content">
                     {{ message.content|safe }}
+                    {% if message.role == 'assistant' %}
+                    <button onclick='speakText({{ message.content|tojson }})'>🔊</button>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -62,7 +65,7 @@
             });
 
             const data = await response.json();
-            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}</div>`;
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button onclick='speakText(${JSON.stringify(data.response)})'>🔊</button></div>`;
             Prism.highlightAll();
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -71,6 +74,24 @@
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 askQuestion();
+            }
+        }
+
+        async function speakText(text) {
+            const response = await fetch(`/tts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text })
+            });
+
+            const data = await response.json();
+            if (data.audio_url) {
+                const audio = new Audio(data.audio_url);
+                audio.play();
+            } else {
+                console.error('Error:', data.error);
             }
         }
     </script>

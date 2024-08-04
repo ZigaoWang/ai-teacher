@@ -1,14 +1,14 @@
 import os
 import sys
-
+import uuid
 import markdown
 import openai
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
-
 from flask_session import Session
 from models import db, User
+from pathlib import Path
 
 # Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Load environment variables from .env file
 load_dotenv()
 
-# Get the OpenAI API key from environment variables
+# Get the OpenAI API key and base URL from environment variables
 api_key = os.getenv('OPENAI_API_KEY')
 base_url = os.getenv('OPENAI_BASE_URL')
 client = openai.OpenAI(api_key=api_key, base_url=base_url)
@@ -156,6 +156,28 @@ def ask():
 
     session['conversation'] = messages
     return jsonify({'response': response})
+
+
+@app.route('/tts', methods=['POST'])
+def tts():
+    text = request.json.get('text')
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
+
+    try:
+        unique_filename = f"speech_{uuid.uuid4()}.mp3"
+        speech_file_path = Path(__file__).parent / "static" / unique_filename
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice="alloy",
+            input=text
+        )
+        response.stream_to_file(speech_file_path)
+        audio_url = f"/static/{unique_filename}"
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    return jsonify({'audio_url': audio_url})
 
 
 if __name__ == '__main__':
