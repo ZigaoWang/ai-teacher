@@ -224,5 +224,14 @@ def stt():
     return jsonify({'text': text})
 
 
+@app.route('/speech_mode')
+def speech_mode():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    return render_template('speech_mode.html', user=user)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
