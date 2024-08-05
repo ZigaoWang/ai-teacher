@@ -12,7 +12,10 @@
     <div class="chat-container">
         <div class="chat-header">
             <span>AI 老师</span>
-            <a href="/logout" class="logout-button" title="登出">登出</a>
+            <div class="header-buttons">
+                <a href="/speech_mode" class="mode-switch-button" title="切换到语音模式"><i class="fas fa-microphone"></i></a>
+                <a href="/logout" class="logout-button" title="登出"><i class="fas fa-sign-out-alt"></i></a>
+            </div>
         </div>
         <div class="chat-messages" id="chat-messages">
             {% for message in messages %}
@@ -21,8 +24,7 @@
                     {{ message.content|safe }}
                     {% if message.role == 'assistant' %}
                     <button class="play-button" onclick='handleSpeakButton(this, {{ message.content|tojson|safe }})' title="播放"><i class="fas fa-play"></i></button>
-                    <button class="pause-button" onclick='pauseAudio()' title="暂停" style="display:none;"><i class="fas fa-pause"></i></button>
-                    <div class="spinner" style="display:none;"></div>
+                    <button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button>
                     {% endif %}
                 </div>
             </div>
@@ -108,7 +110,7 @@
             });
 
             const data = await response.json();
-            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="play-button" onclick='handleSpeakButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button class="pause-button" onclick='pauseAudio()' title="暂停" style="display:none;"><i class="fas fa-pause"></i></button><div class="spinner" style="display:none;"></div></div>`;
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="play-button" onclick='handleSpeakButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button></div>`;
             Prism.highlightAll();
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -122,19 +124,16 @@
 
         async function handleSpeakButton(button, text) {
             const playButton = button;
-            const pauseButton = playButton.nextElementSibling;
-            const spinner = playButton.nextElementSibling.nextElementSibling;
+            const stopButton = playButton.nextElementSibling;
 
             playButton.style.display = 'none';
-            spinner.style.display = 'inline-block';
+            stopButton.style.display = 'inline-block';
 
             // 检查音频是否已缓存
             if (audioCache[text]) {
                 // 音频已缓存，直接播放
                 audio.src = audioCache[text];
                 audio.play();
-                spinner.style.display = 'none';
-                pauseButton.style.display = 'inline-block';
             } else {
                 // 音频未缓存，生成音频
                 const response = await fetch(`/tts`, {
@@ -150,8 +149,6 @@
                     audio.src = data.audio_url;
                     audioCache[text] = data.audio_url; // 缓存音频
                     audio.play();
-                    spinner.style.display = 'none';
-                    pauseButton.style.display = 'inline-block';
                 } else {
                     console.error('Error:', data.error);
                 }
@@ -159,17 +156,19 @@
 
             // 监听音频播放结束事件
             audio.onended = () => {
-                pauseButton.style.display = 'none';
+                stopButton.style.display = 'none';
                 playButton.style.display = 'inline-block';
             };
         }
 
-        function pauseAudio() {
+        function stopAudio() {
             audio.pause();
+            audio.currentTime = 0; // 重置音频播放位置
+
+            const stopButtons = document.querySelectorAll('.stop-button');
             const playButton = document.querySelector('.play-button[style="display: none;"]');
-            const pauseButton = playButton.nextElementSibling;
-            pauseButton.style.display = 'none';
-            playButton.style.display = 'inline-block';
+            stopButtons.forEach(button => button.style.display = 'none');
+            if (playButton) playButton.style.display = 'inline-block';
         }
 
         // 页面加载时滚动到最新的对话
