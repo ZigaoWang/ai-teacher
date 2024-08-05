@@ -20,7 +20,8 @@
                 <div class="message-content">
                     {{ message.content|safe }}
                     {% if message.role == 'assistant' %}
-                    <button class="audio-button" onclick="handleAudioButton(this, {{ message.content|tojson|safe }})" title="播放"><i class="fas fa-play"></i></button>
+                    <button class="play-button" onclick='handleSpeakButton(this, {{ message.content|tojson|safe }})' title="播放"><i class="fas fa-play"></i></button>
+                    <button class="pause-button" onclick='pauseAudio()' title="暂停" style="display:none;"><i class="fas fa-pause"></i></button>
                     <div class="spinner" style="display:none;"></div>
                     {% endif %}
                 </div>
@@ -51,33 +52,29 @@
                 recordButton.classList.remove('recording');
                 isRecording = false;
             } else {
-                try {
-                    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    recorder = new MediaRecorder(audioStream);
-                    recorder.ondataavailable = async event => {
-                        const audioBlob = event.data;
-                        const formData = new FormData();
-                        formData.append('audio', audioBlob, 'recording.wav');
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recorder = new MediaRecorder(audioStream);
+                recorder.ondataavailable = async event => {
+                    const audioBlob = event.data;
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'recording.wav');
 
-                        const response = await fetch('/stt', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        const data = await response.json();
+                    const response = await fetch('/stt', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
 
-                        if (data.text) {
-                            document.getElementById('question').value = data.text;
-                        } else {
-                            console.error('Error:', data.error);
-                        }
-                    };
-                    recorder.start();
-                    recordButton.innerHTML = '<i class="fas fa-stop"></i>停止';
-                    recordButton.classList.add('recording');
-                    isRecording = true;
-                } catch (err) {
-                    console.error('Error accessing microphone:', err);
-                }
+                    if (data.text) {
+                        document.getElementById('question').value = data.text;
+                    } else {
+                        console.error('Error:', data.error);
+                    }
+                };
+                recorder.start();
+                recordButton.innerHTML = '<i class="fas fa-stop"></i>停止';
+                recordButton.classList.add('recording');
+                isRecording = true;
             }
         }
 
@@ -102,22 +99,18 @@
             chatMessages.appendChild(botMessageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            try {
-                const response = await fetch(`/ask`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ question })
-                });
+            const response = await fetch(`/ask`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ question })
+            });
 
-                const data = await response.json();
-                botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="audio-button" onclick="handleAudioButton(this, ${JSON.stringify(data.response)})" title="播放"><i class="fas fa-play"></i></button><div class="spinner" style="display:none;"></div></div>`;
-                Prism.highlightAll();
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            } catch (err) {
-                console.error('Error fetching response:', err);
-            }
+            const data = await response.json();
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="play-button" onclick='handleSpeakButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button class="pause-button" onclick='pauseAudio()' title="暂停" style="display:none;"><i class="fas fa-pause"></i></button><div class="spinner" style="display:none;"></div></div>`;
+            Prism.highlightAll();
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
         function handleKeyPress(event) {
@@ -127,61 +120,56 @@
             }
         }
 
-        async function handleAudioButton(button, text) {
-            const icon = button.querySelector('i');
-            const spinner = button.nextElementSibling;
+        async function handleSpeakButton(button, text) {
+            const playButton = button;
+            const pauseButton = playButton.nextElementSibling;
+            const spinner = playButton.nextElementSibling.nextElementSibling;
 
-            if (audio.paused || audio.src === "") {
-                // 开始播放
-                button.disabled = true;
-                icon.className = 'fas fa-spinner fa-spin';
-                spinner.style.display = 'inline-block';
+            playButton.style.display = 'none';
+            spinner.style.display = 'inline-block';
 
-                try {
-                    // 检查音频是否已缓存
-                    if (audioCache[text]) {
-                        // 音频已缓存，直接播放
-                        audio.src = audioCache[text];
-                        await audio.play();
-                        button.disabled = false;
-                        icon.className = 'fas fa-stop';
-                        spinner.style.display = 'none';
-                    } else {
-                        // 音频未缓存，生成音频
-                        const response = await fetch(`/tts`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ text })
-                        });
-
-                        const data = await response.json();
-                        if (data.audio_url) {
-                            audio.src = data.audio_url;
-                            audioCache[text] = data.audio_url; // 缓存音频
-                            await audio.play();
-                            button.disabled = false;
-                            icon.className = 'fas fa-stop';
-                            spinner.style.display = 'none';
-                        } else {
-                            console.error('Error:', data.error);
-                        }
-                    }
-                } catch (err) {
-                    console.error('Error fetching audio:', err);
-                }
+            // 检查音频是否已缓存
+            if (audioCache[text]) {
+                // 音频已缓存，直接播放
+                audio.src = audioCache[text];
+                audio.play();
+                spinner.style.display = 'none';
+                pauseButton.style.display = 'inline-block';
             } else {
-                // 停止播放
-                audio.pause();
-                audio.currentTime = 0;
-                icon.className = 'fas fa-play';
+                // 音频未缓存，生成音频
+                const response = await fetch(`/tts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+                if (data.audio_url) {
+                    audio.src = data.audio_url;
+                    audioCache[text] = data.audio_url; // 缓存音频
+                    audio.play();
+                    spinner.style.display = 'none';
+                    pauseButton.style.display = 'inline-block';
+                } else {
+                    console.error('Error:', data.error);
+                }
             }
 
             // 监听音频播放结束事件
             audio.onended = () => {
-                icon.className = 'fas fa-play';
+                pauseButton.style.display = 'none';
+                playButton.style.display = 'inline-block';
             };
+        }
+
+        function pauseAudio() {
+            audio.pause();
+            const playButton = document.querySelector('.play-button[style="display: none;"]');
+            const pauseButton = playButton.nextElementSibling;
+            pauseButton.style.display = 'none';
+            playButton.style.display = 'inline-block';
         }
 
         // 页面加载时滚动到最新的对话
