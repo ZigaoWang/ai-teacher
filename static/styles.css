@@ -90,6 +90,7 @@ body {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
+    padding-bottom: 80px; /* Add padding to the bottom */
 }
 
 .chat-message {
