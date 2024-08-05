@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -28,6 +29,6 @@ class Conversation(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     role = db.Column(db.String(50), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship('User', backref=db.backref('conversations', lazy=True))

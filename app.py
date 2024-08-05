@@ -10,6 +10,7 @@ from flask_session import Session
 from models import db, User, Conversation
 from pathlib import Path
 import logging
+from datetime import datetime
 
 # Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -66,10 +67,10 @@ def initial_setup_prompt(user):
     ]
 
     response = get_response_from_openai(initial_prompt)
-    session['conversation'].append({"role": "assistant", "content": response})
+    session['conversation'].append({"role": "assistant", "content": response, "timestamp": datetime.utcnow()})
 
     # Save the initial assistant message to the database
-    assistant_message = Conversation(user_id=user.id, role="assistant", content=response)
+    assistant_message = Conversation(user_id=user.id, role="assistant", content=response, timestamp=datetime.utcnow())
     db.session.add(assistant_message)
     db.session.commit()
 
@@ -139,7 +140,7 @@ def home():
 
     user = User.query.get(session['user_id'])
     conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.timestamp).all()
-    session['conversation'] = [{"role": conv.role, "content": conv.content} for conv in conversation]
+    session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": conv.timestamp} for conv in conversation]
 
     return render_template('index.html', messages=[msg for msg in session['conversation'] if msg['role'] != 'system'],
                            user=user)
@@ -152,7 +153,7 @@ def speech_mode():
 
     user = User.query.get(session['user_id'])
     conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.timestamp).all()
-    session['conversation'] = [{"role": conv.role, "content": conv.content} for conv in conversation]
+    session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": conv.timestamp} for conv in conversation]
 
     return render_template('speech_mode.html',
                            messages=[msg for msg in session['conversation'] if msg['role'] != 'system'], user=user)
@@ -169,10 +170,10 @@ def ask():
 
     user = User.query.get(session['user_id'])
     messages = session['conversation']
-    messages.append({"role": "user", "content": user_input})
+    messages.append({"role": "user", "content": user_input, "timestamp": datetime.utcnow()})
 
     # Save user message to the database
-    user_message = Conversation(user_id=user.id, role="user", content=user_input)
+    user_message = Conversation(user_id=user.id, role="user", content=user_input, timestamp=datetime.utcnow())
     db.session.add(user_message)
     db.session.commit()
 
@@ -181,10 +182,10 @@ def ask():
     messages.append({"role": "system", "content": user_info})
 
     response = get_response_from_openai(messages)
-    messages.append({"role": "assistant", "content": response})
+    messages.append({"role": "assistant", "content": response, "timestamp": datetime.utcnow()})
 
     # Save assistant message to the database
-    assistant_message = Conversation(user_id=user.id, role="assistant", content=response)
+    assistant_message = Conversation(user_id=user.id, role="assistant", content=response, timestamp=datetime.utcnow())
     db.session.add(assistant_message)
     db.session.commit()
 
