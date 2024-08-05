@@ -22,12 +22,12 @@
             <div class="chat-message {{ message.role }}">
                 <div class="message-content">
                     {{ message.content|safe }}
-                    <span class="timestamp">{{ message.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
                     {% if message.role == 'assistant' %}
                     <button class="play-button" onclick='handleSpeakButton(this, {{ message.content|tojson|safe }})' title="播放"><i class="fas fa-play"></i></button>
                     <button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button>
                     {% endif %}
                 </div>
+                <span class="timestamp">{{ message.timestamp }}</span>
             </div>
             {% endfor %}
         </div>
@@ -52,8 +52,8 @@
             const chatMessages = document.getElementById('chat-messages');
             const userMessageDiv = document.createElement('div');
             userMessageDiv.classList.add('chat-message', 'user');
-            const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-            userMessageDiv.innerHTML = `<div class="message-content">${question}<span class="timestamp">${timestamp}</span></div>`;
+            const timestamp = new Date().toISOString().slice(5, 16).replace('T', ' ');
+            userMessageDiv.innerHTML = `<div class="message-content">${question}</div><span class="timestamp">${timestamp}</span>`;
             chatMessages.appendChild(userMessageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -74,7 +74,8 @@
             });
 
             const data = await response.json();
-            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<span class="timestamp">${timestamp}</span><button class="play-button" onclick='handleSpeakButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button></div>`;
+            const botTimestamp = new Date().toISOString().slice(5, 16).replace('T', ' ');
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="play-button" onclick='handleSpeakButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button></div><span class="timestamp">${botTimestamp}</span>`;
             Prism.highlightAll();
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }

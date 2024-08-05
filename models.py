@@ -21,7 +21,6 @@ class User(db.Model):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-<<<<<<< HEAD
         return check_password_hash(self.password_hash, password)
 
 
@@ -33,6 +32,3 @@ class Conversation(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship('User', backref=db.backref('conversations', lazy=True))
-=======
-        return check_password_hash(self.password_hash, password)
->>>>>>> parent of 2bca3c6 (Merge pull request #4 from ZigaoWang/chat_cache)
