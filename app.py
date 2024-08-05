@@ -1,13 +1,14 @@
 import os
 import sys
 import uuid
+import json
 import markdown
 import openai
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_from_directory
 from flask_session import Session
-from models import db, User
+from models import db, User, Conversation
 from pathlib import Path
 import logging
 
@@ -23,25 +24,25 @@ base_url = os.getenv('OPENAI_BASE_URL')
 client = openai.OpenAI(api_key=api_key, base_url=base_url)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.db'
-app.config['SESSION_TYPE'] = 'filesystem'
+app.config.from_object('config.Config')
 db.init_app(app)
 Session(app)
-
-with app.app_context():
-    db.create_all()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
+def create_tables():
+    with app.app_context():
+        db.get_engine(app, bind=None).execute("CREATE TABLE IF NOT EXISTS user (id INTEGER PRIMARY KEY AUTOINCREMENT, username VARCHAR(80) UNIQUE NOT NULL, password_hash VARCHAR(128) NOT NULL, name VARCHAR(120) NOT NULL, age INTEGER, favorite_subject VARCHAR(120), learning_goals TEXT, hobbies TEXT, preferred_learning_style TEXT, challenges TEXT)")
+        db.get_engine(app, bind='conversations').execute("CREATE TABLE IF NOT EXISTS conversation (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, messages TEXT NOT NULL, FOREIGN KEY(user_id) REFERENCES user(id))")
+
+create_tables()
 
 def convert_md_to_html(md_text):
     html = markdown.markdown(md_text,
                              extensions=['fenced_code', 'tables', 'toc', 'footnotes', 'attr_list', 'md_in_html'])
     soup = BeautifulSoup(html, 'lxml')
     return soup.prettify()
-
 
 def get_response_from_openai(messages):
     try:
@@ -58,7 +59,6 @@ def get_response_from_openai(messages):
         logging.error(f"Error in get_response_from_openai: {str(e)}")
         return f"Error: {str(e)}"
 
-
 def initial_setup_prompt(user):
     initial_prompt = [
         {"role": "system",
@@ -68,6 +68,10 @@ def initial_setup_prompt(user):
     response = get_response_from_openai(initial_prompt)
     session['conversation'].append({"role": "assistant", "content": response})
 
+    # Save the conversation in the conversations database
+    conversation = Conversation(user_id=user.id, messages=json.dumps(session['conversation']))
+    db.session.add(conversation)
+    db.session.commit()
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -88,7 +92,6 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -102,12 +105,10 @@ def login():
             return render_template('login.html', error='用户名或密码错误。请重试，或者注册新账户。')
     return render_template('login.html')
 
-
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
-
 
 @app.route('/onboarding', methods=['GET', 'POST'])
 def onboarding():
@@ -126,7 +127,6 @@ def onboarding():
         return redirect(url_for('home'))
     return render_template('onboarding.html', user=user)
 
-
 @app.route('/')
 def home():
     if 'user_id' not in session:
@@ -134,11 +134,14 @@ def home():
 
     user = User.query.get(session['user_id'])
     if 'conversation' not in session:
-        session['conversation'] = []
-        initial_setup_prompt(user)
+        conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.id.desc()).first()
+        if conversation:
+            session['conversation'] = json.loads(conversation.messages)
+        else:
+            session['conversation'] = []
+            initial_setup_prompt(user)
     return render_template('index.html', messages=[msg for msg in session['conversation'] if msg['role'] != 'system'],
                            user=user)
-
 
 @app.route('/speech_mode')
 def speech_mode():
@@ -147,11 +150,14 @@ def speech_mode():
 
     user = User.query.get(session['user_id'])
     if 'conversation' not in session:
-        session['conversation'] = []
-        initial_setup_prompt(user)
+        conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.id.desc()).first()
+        if conversation:
+            session['conversation'] = json.loads(conversation.messages)
+        else:
+            session['conversation'] = []
+            initial_setup_prompt(user)
     return render_template('speech_mode.html',
                            messages=[msg for msg in session['conversation'] if msg['role'] != 'system'], user=user)
-
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -174,8 +180,17 @@ def ask():
     messages.append({"role": "assistant", "content": response})
 
     session['conversation'] = messages
-    return jsonify({'response': response})
 
+    # Save the conversation in the conversations database
+    conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.id.desc()).first()
+    if conversation:
+        conversation.messages = json.dumps(messages)
+    else:
+        conversation = Conversation(user_id=user.id, messages=json.dumps(messages))
+        db.session.add(conversation)
+    db.session.commit()
+
+    return jsonify({'response': response})
 
 @app.route('/tts', methods=['POST'])
 def tts():
@@ -203,11 +218,9 @@ def tts():
 
     return jsonify({'audio_url': audio_url})
 
-
 @app.route('/temp/<filename>')
 def serve_temp_file(filename):
     return send_from_directory(os.path.join(app.root_path, 'temp'), filename)
-
 
 @app.route('/stt', methods=['POST'])
 def stt():
@@ -237,7 +250,6 @@ def stt():
         return jsonify({'error': str(e)}), 400
 
     return jsonify({'text': text})
-
 
 if __name__ == '__main__':
     app.run(debug=True)

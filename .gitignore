@@ -4,3 +4,4 @@ flask_session
 instance
 __pycache__/models.cpython-312.pyc
 temp
+*.pyc
