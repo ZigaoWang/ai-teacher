@@ -38,177 +38,192 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
     <script>
-        let recorder, audioStream;
-        let isRecording = false;
-        let audio = new Audio(); // 全局音频对象
-        let audioCache = {}; // 缓存音频
+    let recorder, audioStream;
+    let isRecording = false;
+    let audio = new Audio(); // 全局音频对象
+    let audioCache = {}; // 缓存音频
 
-        async function startRecording() {
-            const speechButton = document.getElementById('speech-button');
-            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            recorder = new MediaRecorder(audioStream);
-            recorder.ondataavailable = async event => {
-                const audioBlob = event.data;
-                const formData = new FormData();
-                formData.append('audio', audioBlob, 'recording.wav');
+    async function startRecording() {
+        if (isRecording) return; // Prevent multiple recordings
+        const speechButton = document.getElementById('speech-button');
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recorder = new MediaRecorder(audioStream);
+        recorder.ondataavailable = async event => {
+            const audioBlob = event.data;
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.wav');
 
-                const response = await fetch('/stt', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
+            const response = await fetch('/stt', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
 
-                if (data.text) {
-                    addMessage('user', data.text);
-                    askQuestion(data.text);
-                } else {
-                    console.error('Error:', data.error);
-                }
-            };
-            recorder.start();
-            speechButton.innerHTML = '<i class="fas fa-stop"></i> 松开发送';
-            speechButton.classList.add('recording');
-            isRecording = true;
-        }
-
-        function stopRecording() {
-            if (isRecording) {
-                recorder.stop();
-                audioStream.getTracks().forEach(track => track.stop()); // 停止所有音频轨道
-                const speechButton = document.getElementById('speech-button');
-                speechButton.innerHTML = '<i class="fas fa-microphone"></i> 按住说话';
-                speechButton.classList.remove('recording');
-                isRecording = false;
+            if (data.text) {
+                addMessage('user', data.text);
+                askQuestion(data.text);
+            } else {
+                console.error('Error:', data.error);
             }
-        }
+        };
+        recorder.start();
+        speechButton.innerHTML = '<i class="fas fa-stop"></i> 松开发送';
+        speechButton.classList.add('recording');
+        isRecording = true;
+    }
 
-        function addMessage(role, content) {
-            const chatMessages = document.getElementById('chat-messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('chat-message', role);
-            messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
+    function stopRecording() {
+        if (!isRecording) return; // Prevent stopping if not recording
+        recorder.stop();
+        audioStream.getTracks().forEach(track => track.stop()); // 停止所有音频轨道
+        const speechButton = document.getElementById('speech-button');
+        speechButton.innerHTML = '<i class="fas fa-microphone"></i> 按住说话';
+        speechButton.classList.remove('recording');
+        isRecording = false;
+    }
 
-        async function askQuestion(question) {
-            const chatMessages = document.getElementById('chat-messages');
-            const botMessageDiv = document.createElement('div');
-            botMessageDiv.classList.add('chat-message', 'bot');
-            botMessageDiv.innerHTML = `<div class="message-content">生成中...</div>`;
-            chatMessages.appendChild(botMessageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+    function addMessage(role, content) {
+        const chatMessages = document.getElementById('chat-messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('chat-message', role);
+        messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
 
-            const response = await fetch(`/ask`, {
+    async function askQuestion(question) {
+        const chatMessages = document.getElementById('chat-messages');
+        const botMessageDiv = document.createElement('div');
+        botMessageDiv.classList.add('chat-message', 'bot');
+        botMessageDiv.innerHTML = `<div class="message-content">生成中...</div>`;
+        chatMessages.appendChild(botMessageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const response = await fetch(`/ask`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ question })
+        });
+
+        const data = await response.json();
+        botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="play-button" onclick='handleSpeakButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button></div>`;
+        Prism.highlightAll();
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Convert the response to speech
+        handleSpeak(data.response, botMessageDiv);
+    }
+
+    async function handleSpeak(text, botMessageDiv) {
+        const playButton = botMessageDiv.querySelector('.play-button');
+        const stopButton = playButton.nextElementSibling;
+
+        playButton.style.display = 'none';
+        stopButton.style.display = 'inline-block';
+
+        // 检查音频是否已缓存
+        if (audioCache[text]) {
+            // 音频已缓存，直接播放
+            audio.src = audioCache[text];
+            audio.play();
+        } else {
+            // 音频未缓存，生成音频
+            const response = await fetch(`/tts`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ question })
+                body: JSON.stringify({ text })
             });
 
             const data = await response.json();
-            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="play-button" onclick='handleSpeakButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button></div>`;
-            Prism.highlightAll();
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            // Convert the response to speech
-            handleSpeak(data.response, botMessageDiv);
-        }
-
-        async function handleSpeak(text, botMessageDiv) {
-            const playButton = botMessageDiv.querySelector('.play-button');
-            const stopButton = playButton.nextElementSibling;
-
-            playButton.style.display = 'none';
-            stopButton.style.display = 'inline-block';
-
-            // 检查音频是否已缓存
-            if (audioCache[text]) {
-                // 音频已缓存，直接播放
-                audio.src = audioCache[text];
+            if (data.audio_url) {
+                audio.src = data.audio_url;
+                audioCache[text] = data.audio_url; // 缓存音频
                 audio.play();
             } else {
-                // 音频未缓存，生成音频
-                const response = await fetch(`/tts`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ text })
-                });
-
-                const data = await response.json();
-                if (data.audio_url) {
-                    audio.src = data.audio_url;
-                    audioCache[text] = data.audio_url; // 缓存音频
-                    audio.play();
-                } else {
-                    console.error('Error:', data.error);
-                }
+                console.error('Error:', data.error);
             }
-
-            // 监听音频播放结束事件
-            audio.onended = () => {
-                stopButton.style.display = 'none';
-                playButton.style.display = 'inline-block';
-            };
         }
 
-        function stopAudio() {
-            audio.pause();
-            audio.currentTime = 0; // 重置音频播放位置
-
-            const stopButtons = document.querySelectorAll('.stop-button');
-            const playButton = document.querySelector('.play-button[style="display: none;"]');
-            stopButtons.forEach(button => button.style.display = 'none');
-            if (playButton) playButton.style.display = 'inline-block';
-        }
-
-        async function handleSpeakButton(button, text) {
-            const playButton = button;
-            const stopButton = playButton.nextElementSibling;
-
-            playButton.style.display = 'none';
-            stopButton.style.display = 'inline-block';
-
-            // 检查音频是否已缓存
-            if (audioCache[text]) {
-                // 音频已缓存，直接播放
-                audio.src = audioCache[text];
-                audio.play();
-            } else {
-                // 音频未缓存，生成音频
-                const response = await fetch(`/tts`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ text })
-                });
-
-                const data = await response.json();
-                if (data.audio_url) {
-                    audio.src = data.audio_url;
-                    audioCache[text] = data.audio_url; // 缓存音频
-                    audio.play();
-                } else {
-                    console.error('Error:', data.error);
-                }
-            }
-
-            // 监听音频播放结束事件
-            audio.onended = () => {
-                stopButton.style.display = 'none';
-                playButton.style.display = 'inline-block';
-            };
-        }
-
-        // 页面加载时滚动到最新的对话
-        window.onload = () => {
-            const chatMessages = document.getElementById('chat-messages');
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+        // 监听音频播放结束事件
+        audio.onended = () => {
+            stopButton.style.display = 'none';
+            playButton.style.display = 'inline-block';
         };
-    </script>
+    }
+
+    function stopAudio() {
+        audio.pause();
+        audio.currentTime = 0; // 重置音频播放位置
+
+        const stopButtons = document.querySelectorAll('.stop-button');
+        const playButton = document.querySelector('.play-button[style="display: none;"]');
+        stopButtons.forEach(button => button.style.display = 'none');
+        if (playButton) playButton.style.display = 'inline-block';
+    }
+
+    async function handleSpeakButton(button, text) {
+        const playButton = button;
+        const stopButton = playButton.nextElementSibling;
+
+        playButton.style.display = 'none';
+        stopButton.style.display = 'inline-block';
+
+        // 检查音频是否已缓存
+        if (audioCache[text]) {
+            // 音频已缓存，直接播放
+            audio.src = audioCache[text];
+            audio.play();
+        } else {
+            // 音频未缓存，生成音频
+            const response = await fetch(`/tts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text })
+            });
+
+            const data = await response.json();
+            if (data.audio_url) {
+                audio.src = data.audio_url;
+                audioCache[text] = data.audio_url; // 缓存音频
+                audio.play();
+            } else {
+                console.error('Error:', data.error);
+            }
+        }
+
+        // 监听音频播放结束事件
+        audio.onended = () => {
+            stopButton.style.display = 'none';
+            playButton.style.display = 'inline-block';
+        };
+    }
+
+    // 页面加载时滚动到最新的对话
+    window.onload = () => {
+        const chatMessages = document.getElementById('chat-messages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Add event listeners for spacebar press and release
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' && !isRecording) {
+                startRecording();
+                event.preventDefault(); // Prevent default spacebar action (scrolling)
+            }
+        });
+
+        window.addEventListener('keyup', (event) => {
+            if (event.code === 'Space' && isRecording) {
+                stopRecording();
+                event.preventDefault(); // Prevent default spacebar action (scrolling)
+            }
+        });
+    };
+</script>
 </body>
 </html>
