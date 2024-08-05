@@ -35,6 +35,7 @@ with app.app_context():
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
+
 def convert_md_to_html(md_text):
     html = markdown.markdown(md_text,
                              extensions=['fenced_code', 'tables', 'toc', 'footnotes', 'attr_list', 'md_in_html'])
@@ -135,7 +136,21 @@ def home():
     if 'conversation' not in session:
         session['conversation'] = []
         initial_setup_prompt(user)
-    return render_template('index.html', messages=[msg for msg in session['conversation'] if msg['role'] != 'system'], user=user)
+    return render_template('index.html', messages=[msg for msg in session['conversation'] if msg['role'] != 'system'],
+                           user=user)
+
+
+@app.route('/speech_mode')
+def speech_mode():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    if 'conversation' not in session:
+        session['conversation'] = []
+        initial_setup_prompt(user)
+    return render_template('speech_mode.html',
+                           messages=[msg for msg in session['conversation'] if msg['role'] != 'system'], user=user)
 
 
 @app.route('/ask', methods=['POST'])
