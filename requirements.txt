@@ -1,0 +1,6 @@
+markdown~=3.4.1
+openai~=1.37.2
+beautifulsoup4~=4.12.3
+python-dotenv~=1.0.1
+flask~=3.0.3
+werkzeug~=3.0.3

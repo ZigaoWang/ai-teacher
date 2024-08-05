@@ -133,12 +133,21 @@ body {
 
 .chat-input-container {
     background-color: #f4f4f4;
-    padding: 20px;
+    padding: 10px 20px;
     border-top: 1px solid #ddd;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 .chat-input {
     display: flex;
+    flex: 1;
+    margin-right: 10px;
 }
 
 .chat-input textarea {
@@ -149,10 +158,10 @@ body {
     resize: none;
     font-family: 'Arial', sans-serif;
     font-size: 1em;
+    margin-right: 10px;
 }
 
 .chat-input button {
-    margin-left: 10px;
     padding: 10px 20px;
     background-color: #007bff;
     color: #fff;
@@ -240,12 +249,11 @@ button {
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    font-family: 'Arial', sans-serif;
     font-size: 1em;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
+    /* 保持在 chat-input-container 内部 */
 }
 
 #speech-button:hover {
