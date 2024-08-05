@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 老师 - 语音模式</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <span>AI 老师 - 语音模式</span>
+            <a href="/logout" class="logout-button" title="登出">登出</a>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-container">
+            <button id="speech-button" onmousedown="startRecording()" onmouseup="stopRecording()" title="按住说话">
+                <i class="fas fa-microphone"></i> 按住说话
+            </button>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script>
+        let recorder, audioStream;
+        let isRecording = false;
+        let audio = new Audio(); // 全局音频对象
+        let audioCache = {}; // 缓存音频
+
+        async function startRecording() {
+            const speechButton = document.getElementById('speech-button');
+            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            recorder = new MediaRecorder(audioStream);
+            recorder.ondataavailable = async event => {
+                const audioBlob = event.data;
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.wav');
+
+                const response = await fetch('/stt', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.text) {
+                    addMessage('user', data.text);
+                    askQuestion(data.text);
+                } else {
+                    console.error('Error:', data.error);
+                }
+            };
+            recorder.start();
+            speechButton.innerHTML = '<i class="fas fa-stop"></i> 松开发送';
+            speechButton.classList.add('recording');
+            isRecording = true;
+        }
+
+        function stopRecording() {
+            if (isRecording) {
+                recorder.stop();
+                audioStream.getTracks().forEach(track => track.stop()); // 停止所有音频轨道
+                const speechButton = document.getElementById('speech-button');
+                speechButton.innerHTML = '<i class="fas fa-microphone"></i> 按住说话';
+                speechButton.classList.remove('recording');
+                isRecording = false;
+            }
+        }
+
+        function addMessage(role, content) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', role);
+            messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function askQuestion(question) {
+            const chatMessages = document.getElementById('chat-messages');
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.classList.add('chat-message', 'bot');
+            botMessageDiv.innerHTML = `<div class="message-content">生成中...</div>`;
+            chatMessages.appendChild(botMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const response = await fetch(`/ask`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ question })
+            });
+
+            const data = await response.json();
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}</div>`;
+            Prism.highlightAll();
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Convert the response to speech
+            handleSpeak(data.response);
+        }
+
+        async function handleSpeak(text) {
+            // 检查音频是否已缓存
+            if (audioCache[text]) {
+                // 音频已缓存，直接播放
+                audio.src = audioCache[text];
+                audio.play();
+            } else {
+                // 音频未缓存，生成音频
+                const response = await fetch(`/tts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+                if (data.audio_url) {
+                    audio.src = data.audio_url;
+                    audioCache[text] = data.audio_url; // 缓存音频
+                    audio.play();
+                } else {
+                    console.error('Error:', data.error);
+                }
+            }
+
+            // 监听音频播放结束事件
+            audio.onended = () => {
+                const playButton = document.querySelector('.play-button[style="display: none;"]');
+                if (playButton) {
+                    const pauseButton = playButton.nextElementSibling;
+                    pauseButton.style.display = 'none';
+                    playButton.style.display = 'inline-block';
+                }
+            };
+        }
+
+        // 页面加载时滚动到最新的对话
+        window.onload = () => {
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+    </script>
+</body>
+</html>
