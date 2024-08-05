@@ -20,7 +20,7 @@
                 <div class="message-content">
                     {{ message.content|safe }}
                     {% if message.role == 'assistant' %}
-                    <button class="audio-button" onclick='handleAudioButton(this, {{ message.content|tojson|safe }})' title="播放"><i class="fas fa-play"></i></button>
+                    <button class="audio-button" onclick="handleAudioButton(this, {{ message.content|tojson|safe }})" title="播放"><i class="fas fa-play"></i></button>
                     <div class="spinner" style="display:none;"></div>
                     {% endif %}
                 </div>
@@ -46,33 +46,38 @@
             const recordButton = document.getElementById('record-button');
             if (isRecording) {
                 recorder.stop();
+                audioStream.getTracks().forEach(track => track.stop()); // 停止所有音频轨道
                 recordButton.innerHTML = '<i class="fas fa-microphone"></i>录音';
                 recordButton.classList.remove('recording');
                 isRecording = false;
             } else {
-                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                recorder = new MediaRecorder(audioStream);
-                recorder.ondataavailable = async event => {
-                    const audioBlob = event.data;
-                    const formData = new FormData();
-                    formData.append('audio', audioBlob, 'recording.wav');
+                try {
+                    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    recorder = new MediaRecorder(audioStream);
+                    recorder.ondataavailable = async event => {
+                        const audioBlob = event.data;
+                        const formData = new FormData();
+                        formData.append('audio', audioBlob, 'recording.wav');
 
-                    const response = await fetch('/stt', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const data = await response.json();
+                        const response = await fetch('/stt', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
 
-                    if (data.text) {
-                        document.getElementById('question').value = data.text;
-                    } else {
-                        console.error('Error:', data.error);
-                    }
-                };
-                recorder.start();
-                recordButton.innerHTML = '<i class="fas fa-stop"></i>停止';
-                recordButton.classList.add('recording');
-                isRecording = true;
+                        if (data.text) {
+                            document.getElementById('question').value = data.text;
+                        } else {
+                            console.error('Error:', data.error);
+                        }
+                    };
+                    recorder.start();
+                    recordButton.innerHTML = '<i class="fas fa-stop"></i>停止';
+                    recordButton.classList.add('recording');
+                    isRecording = true;
+                } catch (err) {
+                    console.error('Error accessing microphone:', err);
+                }
             }
         }
 
@@ -97,18 +102,22 @@
             chatMessages.appendChild(botMessageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            const response = await fetch(`/ask`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ question })
-            });
+            try {
+                const response = await fetch(`/ask`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question })
+                });
 
-            const data = await response.json();
-            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="audio-button" onclick='handleAudioButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><div class="spinner" style="display:none;"></div></div>`;
-            Prism.highlightAll();
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+                const data = await response.json();
+                botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="audio-button" onclick="handleAudioButton(this, ${JSON.stringify(data.response)})" title="播放"><i class="fas fa-play"></i></button><div class="spinner" style="display:none;"></div></div>`;
+                Prism.highlightAll();
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (err) {
+                console.error('Error fetching response:', err);
+            }
         }
 
         function handleKeyPress(event) {
@@ -125,53 +134,53 @@
             if (audio.paused || audio.src === "") {
                 // 开始播放
                 button.disabled = true;
-                icon.classList.remove('fa-play');
-                icon.classList.add('fa-spinner', 'fa-spin');
+                icon.className = 'fas fa-spinner fa-spin';
                 spinner.style.display = 'inline-block';
 
-                // 检查音频是否已缓存
-                if (audioCache[text]) {
-                    // 音频已缓存，直接播放
-                    audio.src = audioCache[text];
-                    audio.play();
-                } else {
-                    // 音频未缓存，生成音频
-                    const response = await fetch(`/tts`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ text })
-                    });
-
-                    const data = await response.json();
-                    if (data.audio_url) {
-                        audio.src = data.audio_url;
-                        audioCache[text] = data.audio_url; // 缓存音频
-                        audio.play();
+                try {
+                    // 检查音频是否已缓存
+                    if (audioCache[text]) {
+                        // 音频已缓存，直接播放
+                        audio.src = audioCache[text];
+                        await audio.play();
+                        button.disabled = false;
+                        icon.className = 'fas fa-stop';
+                        spinner.style.display = 'none';
                     } else {
-                        console.error('Error:', data.error);
-                    }
-                }
+                        // 音频未缓存，生成音频
+                        const response = await fetch(`/tts`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ text })
+                        });
 
-                audio.oncanplay = () => {
-                    button.disabled = false;
-                    icon.classList.remove('fa-spinner', 'fa-spin');
-                    icon.classList.add('fa-stop');
-                    spinner.style.display = 'none';
-                };
+                        const data = await response.json();
+                        if (data.audio_url) {
+                            audio.src = data.audio_url;
+                            audioCache[text] = data.audio_url; // 缓存音频
+                            await audio.play();
+                            button.disabled = false;
+                            icon.className = 'fas fa-stop';
+                            spinner.style.display = 'none';
+                        } else {
+                            console.error('Error:', data.error);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error fetching audio:', err);
+                }
             } else {
                 // 停止播放
                 audio.pause();
                 audio.currentTime = 0;
-                icon.classList.remove('fa-stop');
-                icon.classList.add('fa-play');
+                icon.className = 'fas fa-play';
             }
 
             // 监听音频播放结束事件
             audio.onended = () => {
-                icon.classList.remove('fa-stop');
-                icon.classList.add('fa-play');
+                icon.className = 'fas fa-play';
             };
         }
 
