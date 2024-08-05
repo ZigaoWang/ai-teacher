@@ -315,77 +315,8 @@ button {
     color: #007bff;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
-    .chat-header {
-        flex-direction: column;
-        text-align: center;
-        padding: 15px;
-        font-size: 1.2em;
-    }
-
-    .header-buttons {
-        margin-top: 10px;
-    }
-
-    .chat-messages {
-        padding: 10px;
-        max-width: 100%;
-        overflow-y: auto;
-    }
-
-    .chat-message {
-        max-width: 100%;
-    }
-
-    .chat-input-container {
-        padding: 10px;
-    }
-
-    .chat-input {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .chat-input textarea {
-        margin-bottom: 10px;
-    }
-
-    .chat-input button {
+    #speech-button {
         width: 100%;
-        margin-left: 0;
-    }
-}
-
-@media (max-width: 480px) {
-    .chat-header {
-        font-size: 1em;
-        padding: 10px;
-    }
-
-    .header-buttons {
-        margin-top: 5px;
-    }
-
-    .chat-messages {
-        padding: 5px;
-    }
-
-    .chat-message {
-        max-width: 100%;
-    }
-
-    .chat-input-container {
-        padding: 5px;
-    }
-
-    .chat-input textarea {
-        font-size: 0.9em;
-        padding: 10px;
-    }
-
-    .chat-input button {
-        width: 100%;
-        margin-left: 0;
     }
 }
