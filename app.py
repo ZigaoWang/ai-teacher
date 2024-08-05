@@ -11,6 +11,7 @@ from models import db, User, Conversation
 from pathlib import Path
 import logging
 from datetime import datetime
+import pytz
 
 # Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -36,13 +37,11 @@ with app.app_context():
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
-
 def convert_md_to_html(md_text):
     html = markdown.markdown(md_text,
                              extensions=['fenced_code', 'tables', 'toc', 'footnotes', 'attr_list', 'md_in_html'])
     soup = BeautifulSoup(html, 'lxml')
     return soup.prettify()
-
 
 def get_response_from_openai(messages):
     try:
@@ -59,6 +58,10 @@ def get_response_from_openai(messages):
         logging.error(f"Error in get_response_from_openai: {str(e)}")
         return f"Error: {str(e)}"
 
+def get_local_time(utc_time, timezone_str='Asia/Shanghai'):
+    local_tz = pytz.timezone(timezone_str)
+    local_time = utc_time.replace(tzinfo=pytz.utc).astimezone(local_tz)
+    return local_time.strftime('%m/%d %H:%M')
 
 def initial_setup_prompt(user):
     initial_prompt = [
@@ -67,13 +70,13 @@ def initial_setup_prompt(user):
     ]
 
     response = get_response_from_openai(initial_prompt)
-    session['conversation'].append({"role": "assistant", "content": response, "timestamp": datetime.utcnow().strftime('%m/%d %H:%M')})
+    timestamp = get_local_time(datetime.utcnow())
+    session['conversation'].append({"role": "assistant", "content": response, "timestamp": timestamp})
 
     # Save the initial assistant message to the database
     assistant_message = Conversation(user_id=user.id, role="assistant", content=response, timestamp=datetime.utcnow())
     db.session.add(assistant_message)
     db.session.commit()
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -94,7 +97,6 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -108,12 +110,10 @@ def login():
             return render_template('login.html', error='用户名或密码错误。请重试，或者注册新账户。')
     return render_template('login.html')
 
-
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
-
 
 @app.route('/onboarding', methods=['GET', 'POST'])
 def onboarding():
@@ -132,7 +132,6 @@ def onboarding():
         return redirect(url_for('home'))
     return render_template('onboarding.html', user=user)
 
-
 @app.route('/')
 def home():
     if 'user_id' not in session:
@@ -140,11 +139,9 @@ def home():
 
     user = User.query.get(session['user_id'])
     conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.timestamp).all()
-    session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": conv.timestamp.strftime('%m/%d %H:%M')} for conv in conversation]
+    session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": get_local_time(conv.timestamp)} for conv in conversation]
 
-    return render_template('index.html', messages=[msg for msg in session['conversation'] if msg['role'] != 'system'],
-                           user=user)
-
+    return render_template('index.html', messages=[msg for msg in session['conversation'] if msg['role'] != 'system'], user=user)
 
 @app.route('/speech_mode')
 def speech_mode():
@@ -153,11 +150,9 @@ def speech_mode():
 
     user = User.query.get(session['user_id'])
     conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.timestamp).all()
-    session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": conv.timestamp.strftime('%m/%d %H:%M')} for conv in conversation]
+    session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": get_local_time(conv.timestamp)} for conv in conversation]
 
-    return render_template('speech_mode.html',
-                           messages=[msg for msg in session['conversation'] if msg['role'] != 'system'], user=user)
-
+    return render_template('speech_mode.html', messages=[msg for msg in session['conversation'] if msg['role'] != 'system'], user=user)
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -170,7 +165,7 @@ def ask():
 
     user = User.query.get(session['user_id'])
     messages = session['conversation']
-    timestamp = datetime.utcnow().strftime('%m/%d %H:%M')
+    timestamp = get_local_time(datetime.utcnow())
     messages.append({"role": "user", "content": user_input, "timestamp": timestamp})
 
     # Save user message to the database
@@ -192,7 +187,6 @@ def ask():
 
     session['conversation'] = messages
     return jsonify({'response': response})
-
 
 @app.route('/tts', methods=['POST'])
 def tts():
@@ -220,11 +214,9 @@ def tts():
 
     return jsonify({'audio_url': audio_url})
 
-
 @app.route('/temp/<filename>')
 def serve_temp_file(filename):
     return send_from_directory(os.path.join(app.root_path, 'temp'), filename)
-
 
 @app.route('/stt', methods=['POST'])
 def stt():
@@ -254,7 +246,6 @@ def stt():
         return jsonify({'error': str(e)}), 400
 
     return jsonify({'text': text})
-
 
 if __name__ == '__main__':
     app.run(debug=True)
