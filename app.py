@@ -230,7 +230,10 @@ def speech_mode():
         return redirect(url_for('login'))
 
     user = User.query.get(session['user_id'])
-    return render_template('speech_mode.html', user=user)
+    if 'conversation' not in session:
+        session['conversation'] = []
+        initial_setup_prompt(user)
+    return render_template('speech_mode.html', messages=[msg for msg in session['conversation'] if msg['role'] != 'system'], user=user)
 
 
 if __name__ == '__main__':

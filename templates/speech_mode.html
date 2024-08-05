@@ -14,7 +14,19 @@
             <span>AI 老师 - 语音模式</span>
             <a href="/logout" class="logout-button" title="登出">登出</a>
         </div>
-        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-messages" id="chat-messages">
+            {% for message in messages %}
+            <div class="chat-message {{ message.role }}">
+                <div class="message-content">
+                    {{ message.content|safe }}
+                    {% if message.role == 'assistant' %}
+                    <button class="play-button" onclick='handleSpeakButton(this, {{ message.content|tojson|safe }})' title="播放"><i class="fas fa-play"></i></button>
+                    <button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
         <div class="chat-input-container">
             <button id="speech-button" onmousedown="startRecording()" onmouseup="stopRecording()" title="按住说话">
                 <i class="fas fa-microphone"></i> 按住说话
