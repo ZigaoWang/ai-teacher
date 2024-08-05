@@ -93,15 +93,21 @@
             });
 
             const data = await response.json();
-            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}</div>`;
+            botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="play-button" onclick='handleSpeakButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button></div>`;
             Prism.highlightAll();
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
             // Convert the response to speech
-            handleSpeak(data.response);
+            handleSpeak(data.response, botMessageDiv);
         }
 
-        async function handleSpeak(text) {
+        async function handleSpeak(text, botMessageDiv) {
+            const playButton = botMessageDiv.querySelector('.play-button');
+            const stopButton = playButton.nextElementSibling;
+
+            playButton.style.display = 'none';
+            stopButton.style.display = 'inline-block';
+
             // 检查音频是否已缓存
             if (audioCache[text]) {
                 // 音频已缓存，直接播放
@@ -129,12 +135,57 @@
 
             // 监听音频播放结束事件
             audio.onended = () => {
-                const playButton = document.querySelector('.play-button[style="display: none;"]');
-                if (playButton) {
-                    const pauseButton = playButton.nextElementSibling;
-                    pauseButton.style.display = 'none';
-                    playButton.style.display = 'inline-block';
+                stopButton.style.display = 'none';
+                playButton.style.display = 'inline-block';
+            };
+        }
+
+        function stopAudio() {
+            audio.pause();
+            audio.currentTime = 0; // 重置音频播放位置
+
+            const stopButtons = document.querySelectorAll('.stop-button');
+            const playButton = document.querySelector('.play-button[style="display: none;"]');
+            stopButtons.forEach(button => button.style.display = 'none');
+            if (playButton) playButton.style.display = 'inline-block';
+        }
+
+        async function handleSpeakButton(button, text) {
+            const playButton = button;
+            const stopButton = playButton.nextElementSibling;
+
+            playButton.style.display = 'none';
+            stopButton.style.display = 'inline-block';
+
+            // 检查音频是否已缓存
+            if (audioCache[text]) {
+                // 音频已缓存，直接播放
+                audio.src = audioCache[text];
+                audio.play();
+            } else {
+                // 音频未缓存，生成音频
+                const response = await fetch(`/tts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+                if (data.audio_url) {
+                    audio.src = data.audio_url;
+                    audioCache[text] = data.audio_url; // 缓存音频
+                    audio.play();
+                } else {
+                    console.error('Error:', data.error);
                 }
+            }
+
+            // 监听音频播放结束事件
+            audio.onended = () => {
+                stopButton.style.display = 'none';
+                playButton.style.display = 'inline-block';
             };
         }
 

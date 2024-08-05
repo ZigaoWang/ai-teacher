@@ -256,3 +256,16 @@ button {
     background-color: red;
     color: white;
 }
+
+.chat-message .message-content button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2em;
+    margin-left: 10px;
+    color: #007bff;
+}
+
+.chat-message .message-content button:hover {
+    color: #0056b3;
+}
