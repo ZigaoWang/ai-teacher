@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_from_directory
 from flask_session import Session
-from models import db, User, Conversation
+from models import db, User
 from pathlib import Path
 import logging
 from datetime import datetime
@@ -69,11 +69,14 @@ def initial_setup_prompt(user):
     response = get_response_from_openai(initial_prompt)
     session['conversation'].append({"role": "assistant", "content": response, "timestamp": datetime.utcnow()})
 
+<<<<<<< HEAD
     # Save the initial assistant message to the database
     assistant_message = Conversation(user_id=user.id, role="assistant", content=response, timestamp=datetime.utcnow())
     db.session.add(assistant_message)
     db.session.commit()
 
+=======
+>>>>>>> parent of 2bca3c6 (Merge pull request #4 from ZigaoWang/chat_cache)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -139,9 +142,15 @@ def home():
         return redirect(url_for('login'))
 
     user = User.query.get(session['user_id'])
+<<<<<<< HEAD
     conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.timestamp).all()
     session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": conv.timestamp} for conv in conversation]
 
+=======
+    if 'conversation' not in session:
+        session['conversation'] = []
+        initial_setup_prompt(user)
+>>>>>>> parent of 2bca3c6 (Merge pull request #4 from ZigaoWang/chat_cache)
     return render_template('index.html', messages=[msg for msg in session['conversation'] if msg['role'] != 'system'],
                            user=user)
 
@@ -152,9 +161,15 @@ def speech_mode():
         return redirect(url_for('login'))
 
     user = User.query.get(session['user_id'])
+<<<<<<< HEAD
     conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.timestamp).all()
     session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": conv.timestamp} for conv in conversation]
 
+=======
+    if 'conversation' not in session:
+        session['conversation'] = []
+        initial_setup_prompt(user)
+>>>>>>> parent of 2bca3c6 (Merge pull request #4 from ZigaoWang/chat_cache)
     return render_template('speech_mode.html',
                            messages=[msg for msg in session['conversation'] if msg['role'] != 'system'], user=user)
 
@@ -172,11 +187,14 @@ def ask():
     messages = session['conversation']
     messages.append({"role": "user", "content": user_input, "timestamp": datetime.utcnow()})
 
+<<<<<<< HEAD
     # Save user message to the database
     user_message = Conversation(user_id=user.id, role="user", content=user_input, timestamp=datetime.utcnow())
     db.session.add(user_message)
     db.session.commit()
 
+=======
+>>>>>>> parent of 2bca3c6 (Merge pull request #4 from ZigaoWang/chat_cache)
     # Include user details in the conversation context
     user_info = f"你是一位中学的英语老师，你要根据提供的中考真题来教学生。你要当一位很好的中学老师，很耐心，很专业，也很关心学生。你要帮助学生学习英语，跟他对话，让他爱上学习，并且觉得学习有趣，觉得你作为老师很有趣。你可以用有趣的例子、故事和趣闻来解释概念，但不要偏离主题。学生问你你是谁时，可以简单地介绍自己是由王子高开发的 AI 老师，不要每次都重复。保持对话的流畅和自然。学生的名字是 {user.name}，他的年龄是 {user.age} 岁，他最喜欢的科目是 {user.favorite_subject}，他的学习目标是 {user.learning_goals}，他的兴趣爱好是 {user.hobbies}，他喜欢的学习风格是 {user.preferred_learning_style}，他遇到的学习挑战是 {user.challenges}。请根据这些信息与学生互动，帮助他们提高英语水平。"
     messages.append({"role": "system", "content": user_info})
@@ -184,11 +202,14 @@ def ask():
     response = get_response_from_openai(messages)
     messages.append({"role": "assistant", "content": response, "timestamp": datetime.utcnow()})
 
+<<<<<<< HEAD
     # Save assistant message to the database
     assistant_message = Conversation(user_id=user.id, role="assistant", content=response, timestamp=datetime.utcnow())
     db.session.add(assistant_message)
     db.session.commit()
 
+=======
+>>>>>>> parent of 2bca3c6 (Merge pull request #4 from ZigaoWang/chat_cache)
     session['conversation'] = messages
     return jsonify({'response': response})
 
