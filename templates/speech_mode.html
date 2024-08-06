@@ -7,6 +7,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
     <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        function sendTimezone() {
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            fetch('/set_timezone', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ timezone: timezone })
+            });
+        }
+
+        window.onload = sendTimezone;
+    </script>
 </head>
 <body>
     <div class="chat-container">
@@ -88,7 +102,7 @@
             const chatMessages = document.getElementById('chat-messages');
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('chat-message', role);
-            const timestamp = new Date().toISOString().slice(5, 16).replace('T', ' ');
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             messageDiv.innerHTML = `<div class="message-content">${content}</div><span class="timestamp">${timestamp}</span>`;
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -114,7 +128,7 @@
 
             const data = await response.json();
             hideLoadingSpinner();
-            const timestamp = new Date().toISOString().slice(5, 16).replace('T', ' ');
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             botMessageDiv.innerHTML = `<div class="message-content">${data.error ? data.error : data.response}<button class="play-button" onclick='handleSpeakButton(this, ${JSON.stringify(data.response)})' title="播放"><i class="fas fa-play"></i></button><button class="stop-button" onclick='stopAudio()' title="停止" style="display:none;"><i class="fas fa-stop"></i></button></div><span class="timestamp">${timestamp}</span>`;
             Prism.highlightAll();
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -238,6 +252,8 @@
                     event.preventDefault(); // Prevent default spacebar action (scrolling)
                 }
             });
+
+            sendTimezone();  // Ensure timezone is sent when the page loads
         };
     </script>
 </body>

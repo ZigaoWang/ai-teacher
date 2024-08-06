@@ -58,10 +58,11 @@ def get_response_from_openai(messages):
         logging.error(f"Error in get_response_from_openai: {str(e)}")
         return f"Error: {str(e)}"
 
-def get_local_time(utc_time, timezone_str='Asia/Shanghai'):
+def get_local_time(utc_time):
+    timezone_str = session.get('timezone', 'UTC')
     local_tz = pytz.timezone(timezone_str)
     local_time = utc_time.replace(tzinfo=pytz.utc).astimezone(local_tz)
-    return local_time.strftime('%m/%d %H:%M')
+    return local_time.strftime('%H:%M')
 
 def initial_setup_prompt(user):
     initial_prompt = [
@@ -102,9 +103,11 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        timezone = request.form['timezone']
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             session['user_id'] = user.id
+            session['timezone'] = timezone
             return redirect(url_for('onboarding'))
         else:
             return render_template('login.html', error='用户名或密码错误。请重试，或者注册新账户。')
@@ -128,6 +131,7 @@ def onboarding():
         user.hobbies = request.form['hobbies']
         user.preferred_learning_style = request.form['preferred_learning_style']
         user.challenges = request.form['challenges']
+        user.timezone = request.form['timezone']
         db.session.commit()
         return redirect(url_for('home'))
     return render_template('onboarding.html', user=user)
@@ -187,6 +191,13 @@ def ask():
 
     session['conversation'] = messages
     return jsonify({'response': response})
+
+@app.route('/set_timezone', methods=['POST'])
+def set_timezone():
+    timezone = request.json.get('timezone')
+    if timezone:
+        session['timezone'] = timezone
+    return jsonify({'status': 'success'})
 
 @app.route('/tts', methods=['POST'])
 def tts():
