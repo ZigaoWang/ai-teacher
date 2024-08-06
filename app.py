@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_from_directory
 from flask_session import Session
+from flask_migrate import Migrate
 from models import db, User, Conversation
 from pathlib import Path
 import logging
@@ -30,6 +31,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///students.db'
 app.config['SESSION_TYPE'] = 'filesystem'
 db.init_app(app)
 Session(app)
+
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
 with app.app_context():
     db.create_all()
@@ -103,7 +107,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        timezone = request.form['timezone']
+        timezone = request.form.get('timezone')
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             session['user_id'] = user.id
@@ -124,14 +128,17 @@ def onboarding():
         return redirect(url_for('login'))
 
     user = User.query.get(session['user_id'])
+    if user is None:
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
-        user.age = request.form['age']
-        user.favorite_subject = request.form['favorite_subject']
-        user.learning_goals = request.form['learning_goals']
-        user.hobbies = request.form['hobbies']
-        user.preferred_learning_style = request.form['preferred_learning_style']
-        user.challenges = request.form['challenges']
-        user.timezone = request.form['timezone']
+        user.age = request.form.get('age', type=int)
+        user.favorite_subject = request.form.get('favorite_subject')
+        user.learning_goals = request.form.get('learning_goals')
+        user.hobbies = request.form.get('hobbies')
+        user.preferred_learning_style = request.form.get('preferred_learning_style')
+        user.challenges = request.form.get('challenges')
+        user.timezone = request.form.get('timezone')
         db.session.commit()
         return redirect(url_for('home'))
     return render_template('onboarding.html', user=user)
@@ -142,6 +149,9 @@ def home():
         return redirect(url_for('login'))
 
     user = User.query.get(session['user_id'])
+    if user is None:
+        return redirect(url_for('login'))
+
     conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.timestamp).all()
     session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": get_local_time(conv.timestamp)} for conv in conversation]
 
@@ -153,6 +163,9 @@ def speech_mode():
         return redirect(url_for('login'))
 
     user = User.query.get(session['user_id'])
+    if user is None:
+        return redirect(url_for('login'))
+
     conversation = Conversation.query.filter_by(user_id=user.id).order_by(Conversation.timestamp).all()
     session['conversation'] = [{"role": conv.role, "content": conv.content, "timestamp": get_local_time(conv.timestamp)} for conv in conversation]
 
@@ -168,6 +181,9 @@ def ask():
         return jsonify({'error': 'No question provided'}), 400
 
     user = User.query.get(session['user_id'])
+    if user is None:
+        return jsonify({'error': 'User not found'}), 400
+
     messages = session['conversation']
     timestamp = get_local_time(datetime.utcnow())
     messages.append({"role": "user", "content": user_input, "timestamp": timestamp})
