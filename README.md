@@ -1,7 +1,3 @@
-Sure! Below is a README file for your AI Teacher project. This README includes sections for project description, setup instructions, usage, and other relevant information.
-
----
-
 # AI Teacher
 
 AI Teacher is an interactive web application designed to help middle school students learn English. The application uses OpenAI's GPT-4o-mini model to generate engaging and educational conversations, simulating a patient and professional English teacher.
@@ -123,7 +119,7 @@ Contributions are welcome! Please follow these steps to contribute:
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
 
 ## Contact
 
