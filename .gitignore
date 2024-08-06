@@ -5,3 +5,4 @@ instance
 temp
 *.pyc
 .idea
+data
