@@ -329,3 +329,11 @@ button {
         width: 100%;
     }
 }
+
+.timestamp {
+    display: block;
+    font-size: 0.75em;
+    color: #888;
+    text-align: right;
+    margin-top: 5px;
+}
