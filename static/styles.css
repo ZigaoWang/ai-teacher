@@ -9,6 +9,16 @@ body {
     height: 100vh;
 }
 
+a {
+    text-decoration: none;
+    color: #007bff;
+    transition: all 0.3s;
+}
+
+a:hover {
+    color: #0056b3;
+}
+
 /* 认证容器样式 */
 .auth-container {
     width: 300px;
