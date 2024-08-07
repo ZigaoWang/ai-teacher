@@ -63,8 +63,11 @@ def get_response_from_openai(messages):
         return f"Error: {str(e)}"
 
 def get_local_time(utc_time):
-    timezone_str = session.get('timezone', 'UTC')
-    local_tz = pytz.timezone(timezone_str)
+    timezone_str = session.get('timezone', 'Asia/Shanghai')  # Default to 'Asia/Shanghai' (GMT+8) if timezone is not set
+    try:
+        local_tz = pytz.timezone(timezone_str)
+    except pytz.UnknownTimeZoneError:
+        local_tz = pytz.timezone('Asia/Shanghai')  # Fallback to 'Asia/Shanghai' if the provided timezone is invalid
     local_time = utc_time.replace(tzinfo=pytz.utc).astimezone(local_tz)
     return local_time.strftime('%H:%M')
 
