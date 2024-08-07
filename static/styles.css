@@ -405,3 +405,82 @@ button {
     background-color: #fff;
     color: #007bff;
 }
+
+.preset-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.preset-buttons button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.preset-buttons button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.preset-buttons button:active {
+    transform: translateY(1px);
+}
+
+.chat-input-container {
+    background-color: #f4f4f4;
+    padding: 10px 20px;
+    border-top: 1px solid #ddd;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.chat-input {
+    display: flex;
+    flex: 1;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.chat-input textarea {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    resize: none;
+    font-family: 'Arial', sans-serif;
+    font-size: 1em;
+    margin-right: 10px;
+}
+
+.chat-input button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Arial', sans-serif;
+    font-size: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-input button:hover {
+    background-color: #0056b3;
+}

@@ -47,6 +47,15 @@
             {% endfor %}
         </div>
         <div class="chat-input-container">
+            <div class="preset-buttons">
+                <button onclick="sendPresetMessage('我不会')">我不会</button>
+                <button onclick="sendPresetMessage('你再给我讲解一下')">你再给我讲解一下</button>
+                <button onclick="sendPresetMessage('给我出一道题目考考我')">给我出一道题目考考我</button>
+                <button onclick="sendPresetMessage('告诉我一个有趣的知识')">告诉我一个有趣的知识</button>
+                <button onclick="sendPresetMessage('解释一下这个单词')">解释一下这个单词</button>
+                <button onclick="sendPresetMessage('我该怎么提高英语口语')">我该怎么提高英语口语</button>
+                <button onclick="sendPresetMessage('推荐一些学习英语的资源')">推荐一些学习英语的资源</button>
+            </div>
             <div class="chat-input">
                 <textarea id="question" rows="1" placeholder="提问或输入内容..." onkeypress="handleKeyPress(event)" aria-label="提问或输入内容"></textarea>
                 <button onclick="askQuestion()" title="发送"><i class="fas fa-paper-plane"></i>发送</button>
@@ -157,6 +166,11 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
             sendTimezone();  // Ensure timezone is sent when the page loads
         };
+
+        function sendPresetMessage(message) {
+            document.getElementById('question').value = message;
+            askQuestion();
+        }
     </script>
 </body>
 </html>
