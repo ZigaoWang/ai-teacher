@@ -224,7 +224,7 @@ body {
         display: none!important;
     }
     .chat-messages {
-        padding-bottom: 80px;
+        padding-bottom: 110px;
     }
 }
 
@@ -421,4 +421,3 @@ button {
 .help-container button:hover {
     background-color: #0056b3;
 }
-
