@@ -50,6 +50,7 @@ body {
     border-radius: 5px;
     cursor: pointer;
     font-size: 1em;
+    transition: background-color 0.3s, transform 0.2s;
 }
 
 .auth-container button:hover {
@@ -89,7 +90,7 @@ body {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
-    padding-bottom: 80px; /* Add padding to the bottom */
+    padding-bottom: 150px; /* Add padding to the bottom to avoid being covered by the input container */
 }
 
 .chat-message {
@@ -139,15 +140,86 @@ body {
     bottom: 0;
     width: 100%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
 }
 
+.preset-buttons-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.preset-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 10px;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    overflow: hidden;
+    max-height: 200px; /* Default max-height */
+    opacity: 1; /* Default opacity */
+}
+
+.preset-buttons button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.preset-buttons button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.preset-buttons button:active {
+    transform: translateY(1px);
+}
+
+.toggle-button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: 'Arial', sans-serif;
+    font-size: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-button i {
+    transform: rotate(0deg); /* Rotate the arrow to point down */
+}
+
+.toggle-button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.toggle-button:active {
+    transform: translateY(1px);
+}
+
 .chat-input {
     display: flex;
     flex: 1;
-    margin-right: 10px;
+    width: 100%;
 }
 
 .chat-input textarea {
@@ -179,7 +251,7 @@ body {
     background-color: #0056b3;
 }
 
-.logout-button {
+.logout-button, .mode-switch-button, .help-button {
     color: #fff;
     background: none;
     border: 1px solid #fff;
@@ -187,11 +259,21 @@ body {
     border-radius: 5px;
     cursor: pointer;
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    transition: background-color 0.3s, transform 0.2s;
 }
 
-.logout-button:hover {
+.logout-button:hover, .mode-switch-button:hover, .help-button:hover {
     background-color: #fff;
     color: #007bff;
+}
+
+.header-buttons {
+    display: flex;
+    align-items: center;
 }
 
 button {
@@ -253,7 +335,6 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 保持在 chat-input-container 内部 */
 }
 
 #speech-button:hover {
@@ -263,64 +344,6 @@ button {
 #speech-button.recording {
     background-color: red;
     color: white;
-}
-
-.chat-message .message-content button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2em;
-    margin-left: 10px;
-    color: #007bff;
-}
-
-.chat-message .message-content button:hover {
-    color: #0056b3;
-}
-
-/* Mode switch button */
-.mode-switch-button {
-    color: #fff;
-    background: none;
-    border: 1px solid #fff;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    text-decoration: none;
-    margin-right: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mode-switch-button:hover {
-    background-color: #fff;
-    color: #007bff;
-}
-
-/* Header buttons container */
-.header-buttons {
-    display: flex;
-    align-items: center;
-}
-
-/* Logout button */
-.logout-button {
-    color: #fff;
-    background: none;
-    border: 1px solid #fff;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.logout-button:hover {
-    background-color: #fff;
-    color: #007bff;
 }
 
 @media (max-width: 768px) {
@@ -384,103 +407,5 @@ button {
 }
 
 .help-container button:hover {
-    background-color: #0056b3;
-}
-
-.help-button {
-    color: #fff;
-    background: none;
-    border: 1px solid #fff;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    text-decoration: none;
-    margin-right: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.help-button:hover {
-    background-color: #fff;
-    color: #007bff;
-}
-
-.preset-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 10px;
-}
-
-.preset-buttons button {
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    padding: 10px 15px;
-    margin: 5px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.3s, transform 0.2s;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.preset-buttons button:hover {
-    background-color: #0056b3;
-    transform: translateY(-2px);
-}
-
-.preset-buttons button:active {
-    transform: translateY(1px);
-}
-
-.chat-input-container {
-    background-color: #f4f4f4;
-    padding: 10px 20px;
-    border-top: 1px solid #ddd;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-}
-
-.chat-input {
-    display: flex;
-    flex: 1;
-    margin-top: 10px;
-    width: 100%;
-}
-
-.chat-input textarea {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    resize: none;
-    font-family: 'Arial', sans-serif;
-    font-size: 1em;
-    margin-right: 10px;
-}
-
-.chat-input button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    font-family: 'Arial', sans-serif;
-    font-size: 1em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.chat-input button:hover {
     background-color: #0056b3;
 }

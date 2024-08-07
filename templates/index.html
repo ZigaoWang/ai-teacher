@@ -47,17 +47,20 @@
             {% endfor %}
         </div>
         <div class="chat-input-container">
-            <div class="preset-buttons">
-                <button onclick="sendPresetMessage('我不会')">我不会</button>
-                <button onclick="sendPresetMessage('你再给我讲解一下')">你再给我讲解一下</button>
-                <button onclick="sendPresetMessage('给我出一道题目考考我')">给我出一道题目考考我</button>
-                <button onclick="sendPresetMessage('告诉我一个有趣的知识')">告诉我一个有趣的知识</button>
-                <button onclick="sendPresetMessage('解释一下这个单词')">解释一下这个单词</button>
-                <button onclick="sendPresetMessage('我该怎么提高英语口语')">我该怎么提高英语口语</button>
-                <button onclick="sendPresetMessage('推荐一些学习英语的资源')">推荐一些学习英语的资源</button>
+            <div class="preset-buttons-container">
+                <div class="preset-buttons">
+                    <button onclick="sendPresetMessage('我不会')">我不会</button>
+                    <button onclick="sendPresetMessage('你再给我讲解一下')">你再给我讲解一下</button>
+                    <button onclick="sendPresetMessage('给我出一道题目考考我')">给我出一道题目考考我</button>
+                    <button onclick="sendPresetMessage('告诉我一个有趣的知识')">告诉我一个有趣的知识</button>
+                    <button onclick="sendPresetMessage('解释一下这个单词')">解释一下这个单词</button>
+                    <button onclick="sendPresetMessage('我该怎么提高英语口语')">我该怎么提高英语口语</button>
+                    <button onclick="sendPresetMessage('推荐一些学习英语的资源')">推荐一些学习英语的资源</button>
+                </div>
             </div>
             <div class="chat-input">
                 <textarea id="question" rows="1" placeholder="提问或输入内容..." onkeypress="handleKeyPress(event)" aria-label="提问或输入内容"></textarea>
+                <button class="toggle-button" onclick="togglePresetButtons()" title="收缩/展开"><i class="fas fa-angle-down"></i></button>
                 <button onclick="askQuestion()" title="发送"><i class="fas fa-paper-plane"></i>发送</button>
             </div>
         </div>
@@ -165,11 +168,35 @@
             const chatMessages = document.getElementById('chat-messages');
             chatMessages.scrollTop = chatMessages.scrollHeight;
             sendTimezone();  // Ensure timezone is sent when the page loads
+
+            // 检查本地存储中的展开状态
+            const isExpanded = localStorage.getItem('presetButtonsExpanded') === 'true';
+            if (!isExpanded) {
+                document.querySelector('.preset-buttons').style.maxHeight = '0';
+                document.querySelector('.preset-buttons').style.opacity = '0';
+                document.querySelector('.toggle-button i').classList.replace('fa-angle-down', 'fa-angle-up');
+            }
         };
 
         function sendPresetMessage(message) {
             document.getElementById('question').value = message;
             askQuestion();
+        }
+
+        function togglePresetButtons() {
+            const presetButtons = document.querySelector('.preset-buttons');
+            const toggleIcon = document.querySelector('.toggle-button i');
+            if (presetButtons.style.maxHeight === '0px' || presetButtons.style.maxHeight === '') {
+                presetButtons.style.maxHeight = '200px';
+                presetButtons.style.opacity = '1';
+                toggleIcon.classList.replace('fa-angle-up', 'fa-angle-down');
+                localStorage.setItem('presetButtonsExpanded', 'true');
+            } else {
+                presetButtons.style.maxHeight = '0';
+                presetButtons.style.opacity = '0';
+                toggleIcon.classList.replace('fa-angle-down', 'fa-angle-up');
+                localStorage.setItem('presetButtonsExpanded', 'false');
+            }
         }
     </script>
 </body>
