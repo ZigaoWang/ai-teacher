@@ -216,6 +216,18 @@ body {
     transform: translateY(1px);
 }
 
+@media (max-width: 590px) {
+    .preset-buttons {
+        display: none;
+    }
+    .toggle-button {
+        display: none!important;
+    }
+    .chat-messages {
+        padding-bottom: 80px;
+    }
+}
+
 .chat-input {
     display: flex;
     flex: 1;
@@ -409,3 +421,4 @@ button {
 .help-container button:hover {
     background-color: #0056b3;
 }
+
