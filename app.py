@@ -277,5 +277,9 @@ def stt():
 
     return jsonify({'text': text})
 
+@app.route('/help')
+def help():
+    return render_template('help.html')
+
 if __name__ == '__main__':
     app.run(debug=True)

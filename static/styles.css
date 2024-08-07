@@ -336,3 +336,72 @@ button {
     text-align: right;
     margin-top: 5px;
 }
+
+.help-container {
+    width: 80%;
+    margin: 50px auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+.help-container h2 {
+    text-align: center;
+}
+
+.help-container h3 {
+    margin-top: 20px;
+}
+
+.help-container p {
+    margin: 10px 0;
+}
+
+.help-container ol {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.help-container img.help-image {
+    max-width: 100%;
+    height: auto;
+    margin: 10px 0;
+}
+
+.help-container button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    display: block;
+    margin: 20px auto;
+}
+
+.help-container button:hover {
+    background-color: #0056b3;
+}
+
+.help-button {
+    color: #fff;
+    background: none;
+    border: 1px solid #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.help-button:hover {
+    background-color: #fff;
+    color: #007bff;
+}
