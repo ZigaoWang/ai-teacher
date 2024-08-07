@@ -47,6 +47,17 @@
             {% endfor %}
         </div>
         <div class="chat-input-container">
+            <div class="preset-buttons-container">
+                <div class="preset-buttons">
+                    <button onclick="sendPresetMessage('我不会')">我不会</button>
+                    <button onclick="sendPresetMessage('你再给我讲解一下')">你再给我讲解一下</button>
+                    <button onclick="sendPresetMessage('给我出一道题目考考我')">给我出一道题目考考我</button>
+                    <button onclick="sendPresetMessage('告诉我一个有趣的知识')">告诉我一个有趣的知识</button>
+                    <button onclick="sendPresetMessage('解释一下这个单词')">解释一下这个单词</button>
+                    <button onclick="sendPresetMessage('我该怎么提高英语口语')">我该怎么提高英语口语</button>
+                    <button onclick="sendPresetMessage('推荐一些学习英语的资源')">推荐一些学习英语的资源</button>
+                </div>
+            </div>
             <button id="speech-button" onmousedown="startRecording()" onmouseup="stopRecording()" title="按住说话">
                 <i class="fas fa-microphone"></i> 按住说话
             </button>
@@ -256,6 +267,11 @@
 
             sendTimezone();  // Ensure timezone is sent when the page loads
         };
+
+        function sendPresetMessage(message) {
+            addMessage('user', message);
+            askQuestion(message);
+        }
     </script>
 </body>
 </html>
