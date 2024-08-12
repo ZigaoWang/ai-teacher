@@ -1,5 +1,18 @@
 # AI Teacher
 
+> [!NOTE]
+> 
+> ## 广告插播：TurboAI
+> 
+> ### 全面、快速、稳定的 AI 中转服务——**TurboAI**
+> 
+> 高性价比的智能 API 转发服务，汇聚 OpenAI、Gemini、Claude、Zhipu、Suno 等顶尖 AI 模型。全球快速响应，稳定可靠，按量付费，安全无忧，兼容多种模型协议，为您提供专业支持和卓越性能保障。
+> 
+> 我个人强烈推荐使用 **TurboAI**，因为在此项目中使用的 GPT-4o-mini, TTS-1, Whisper-1 都只需要一个 **TurboAI API Key**。这大大简化了使用过程，因此推荐给大家。
+> 
+> 注册链接：[点击这里](https://api.turboai.io/register?aff=VkS0)
+
+
 AI Teacher is an interactive web application designed to help middle school students learn English. The application uses OpenAI's GPT-4o-mini model to generate engaging and educational conversations, simulating a patient and professional English teacher.
 
 ## Table of Contents
